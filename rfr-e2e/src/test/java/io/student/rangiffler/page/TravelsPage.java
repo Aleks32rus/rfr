@@ -1,32 +1,26 @@
 package io.student.rangiffler.page;
 
-import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
-import com.microsoft.playwright.options.AriaRole;
 import io.qameta.allure.Step;
-import java.util.regex.Pattern;
+import io.student.rangiffler.config.TestConfig;
+import io.student.rangiffler.page.component.HeaderComponent;
 
-import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
-
-/** Страница путешествий, доступная после авторизации. */
+/**
+ * Страница путешествий, доступная после авторизации.
+ */
 public final class TravelsPage {
-  private final Page page;
+    public static String URL = TestConfig.FRONT_URL + "/my-travels";
 
-  public TravelsPage(Page page) {
-    this.page = page;
-  }
+    private final Page page;
+    private final HeaderComponent header;
 
-  @Step("Проверить открытие личного кабинета")
-  public TravelsPage shouldBeOpened() {
-    assertThat(page).hasURL(Pattern.compile(".*/my-travels$"));
-    assertThat(page.getByRole(AriaRole.HEADING, new Page.GetByRoleOptions().setName("Travels map").setExact(true))).isVisible();
-    assertThat(page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Logout").setExact(true))).isVisible();
-    return this;
-  }
+    public TravelsPage(Page page) {
+        this.page = page;
+        this.header = new HeaderComponent(page);
+    }
 
-  @Step("Открыть профиль текущего пользователя")
-  public ProfilePage profile() {
-    page.getByRole(AriaRole.BANNER).getByRole(AriaRole.LINK, new Locator.GetByRoleOptions().setName("Profile").setExact(true)).click();
-    return new ProfilePage(page);
-  }
+    @Step("Открыть профиль текущего пользователя")
+    public ProfilePage profile() {
+        return header.profile();
+    }
 }

@@ -1,25 +1,42 @@
 package io.student.rangiffler.page;
 
+import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.AriaRole;
+import io.qameta.allure.Param;
 import io.qameta.allure.Step;
+import io.qameta.allure.model.Parameter;
+import io.student.rangiffler.config.TestConfig;
 
-import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
-
-/** Форма входа через сервер авторизации. */
+/**
+ * Форма входа через сервер авторизации.
+ */
 public final class LoginPage {
-  private final Page page;
+    public static String URL = TestConfig.AUTH_URL + "/login";
 
-  public LoginPage(Page page) {
-    this.page = page;
-  }
+    private final Page page;
+    private final Locator username;
+    private final Locator password;
+    private final Locator submit;
 
-  @Step("Войти с данными зарегистрированного пользователя")
-  public TravelsPage login(String username, String password) {
-    assertThat(page).hasTitle("Login to Rangiffler");
-    page.getByRole(AriaRole.TEXTBOX, new Page.GetByRoleOptions().setName("Username").setExact(true)).fill(username);
-    page.getByPlaceholder("Type your password", new Page.GetByPlaceholderOptions().setExact(true)).fill(password);
-    page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Sign in").setExact(true)).click();
-    return new TravelsPage(page);
-  }
+    public LoginPage(Page page) {
+        this.page = page;
+        this.username = page.getByRole(AriaRole.TEXTBOX, new Page.GetByRoleOptions().setName("Username").setExact(true));
+        this.password = page.getByPlaceholder("Type your password", new Page.GetByPlaceholderOptions().setExact(true));
+        this.submit = page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Sign in").setExact(true));
+    }
+
+    @Step("Заполнить форму входа")
+    public LoginPage fillLoginForm(@Param("Логин") String username,
+                                   @Param(name = "Пароль", mode = Parameter.Mode.MASKED) String password) {
+        this.username.fill(username);
+        this.password.fill(password);
+        return this;
+    }
+
+    @Step("Отправить форму входа")
+    public TravelsPage signIn() {
+        submit.click();
+        return new TravelsPage(page);
+    }
 }

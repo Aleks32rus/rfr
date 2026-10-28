@@ -21,6 +21,7 @@ configurations {
 dependencies {
     agent "org.aspectj:aspectjweaver:$aspectJVersion"
 
+    testImplementation platform('org.springframework.boot:spring-boot-dependencies:4.1.1')
     testImplementation platform("org.junit:junit-bom:$junitVersion")
     testImplementation platform("io.qameta.allure:allure-bom:$allureJavaVersion")
 
@@ -29,6 +30,9 @@ dependencies {
     testImplementation "com.microsoft.playwright:playwright:$playwrightVersion"
 
     testImplementation "org.junit.jupiter:junit-jupiter"
+    testImplementation 'org.springframework:spring-jdbc'
+    testImplementation 'org.springframework.security:spring-security-crypto'
+    testRuntimeOnly 'com.mysql:mysql-connector-j'
     testRuntimeOnly "org.junit.platform:junit-platform-launcher"
     testRuntimeOnly "org.aspectj:aspectjrt:$aspectJVersion"
 }
@@ -43,5 +47,8 @@ allure {
 
 test {
     useJUnitPlatform()
+    System.properties.findAll { key, value -> key.toString().startsWith('rfr.') }.each { key, value ->
+        systemProperty key.toString(), value
+    }
     jvmArgumentProviders.add({ ["-javaagent:${configurations.agent.singleFile}"] } as CommandLineArgumentProvider)
 }
