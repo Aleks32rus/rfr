@@ -120,3 +120,11 @@ try (UserFixture fixture = new UserFixture()) {
 ```powershell
 .\gradlew.bat :rfr-e2e:test --tests io.student.rangiffler.test.profile.ProfileTest
 ```
+
+## Негативные проверки входа
+
+`test/auth/LoginNegativeTest` проверяет неверный пароль пользователя из `@User` и вход с несуществующим логином. В обоих случаях ожидается точное сообщение `Bad credentials`: Spring Security скрывает `UsernameNotFoundException`. Для стабильного текста ошибки контекст браузера использует локаль `en-US`. `LoginPage` находит сообщение по `.form__error` из шаблона `rfr-auth`, без поиска по роли `alert`.
+
+```powershell
+.\gradlew.bat :rfr-e2e:test --tests io.student.rangiffler.test.auth.LoginNegativeTest
+```
