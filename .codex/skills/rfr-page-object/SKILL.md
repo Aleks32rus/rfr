@@ -1,5 +1,5 @@
 ---
-name: page-object
+name: rfr-page-object
 description: Создание и изменение Page Object и переиспользуемых UI-компонентов для тестов на Java, Playwright и Allure. Применяй при добавлении PO, выделении компонентов и приведении существующих PO к соглашениям проекта.
 ---
 
