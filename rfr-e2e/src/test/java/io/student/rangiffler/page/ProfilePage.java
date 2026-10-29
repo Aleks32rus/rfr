@@ -8,6 +8,9 @@ import io.qameta.allure.Param;
 import io.student.rangiffler.config.TestConfig;
 
 import java.nio.file.Path;
+import java.nio.file.Files;
+import java.io.IOException;
+import java.util.Base64;
 import java.util.regex.Pattern;
 
 import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
@@ -111,6 +114,14 @@ public final class ProfilePage {
     public ProfilePage shouldHaveAvatar() {
         assertThat(avatar).isVisible();
         assertThat(avatar).hasAttribute("src", Pattern.compile("^data:image/.+"));
+        return this;
+    }
+
+    @Step("Проверить, что аватар соответствует файлу")
+    public ProfilePage shouldHaveAvatar(@Param("Ожидаемый файл аватара") Path file) throws IOException {
+        String base64 = Base64.getEncoder().encodeToString(Files.readAllBytes(file));
+        assertThat(avatar).isVisible();
+        assertThat(avatar).hasAttribute("src", Pattern.compile("^data:image/[^;]+;base64," + base64.replace("+", "\\+") + "$"));
         return this;
     }
 

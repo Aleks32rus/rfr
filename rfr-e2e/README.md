@@ -111,4 +111,12 @@ try (UserFixture fixture = new UserFixture()) {
 
 ## Соглашения Page Object
 
-Страницы следуют скиллу `.codex/skills/page-object/SKILL.md`: классы `final`, URL берутся из `TestConfig`, конструкторы только инициализируют поля. Имена методов отражают конкретные бизнес-действия: `fillRegistrationForm(...)` и `submitRegistration()` для регистрации, `fillLoginForm(...)` и `signIn()` для входа. Методы проверок используют web-first assertions без действий и предварительной проверки загрузки. Общая шапка выделена в `HeaderComponent` и подключается через композицию. Методы действий и проверок отмечены `@Step`; параметры форм записываются в Allure, пароль маскируется.
+Страницы следуют скиллу `.codex/skills/rfr-page-object/SKILL.md`: классы `final`, URL берутся из `TestConfig`, конструкторы только инициализируют поля. Имена методов отражают конкретные бизнес-действия: `fillRegistrationForm(...)` и `submitRegistration()` для регистрации, `fillLoginForm(...)` и `signIn()` для входа. Методы проверок используют web-first assertions без действий и предварительной проверки загрузки. Общая шапка выделена в `HeaderComponent` и подключается через композицию. Методы действий и проверок отмечены `@Step`; параметры форм записываются в Allure, пароль маскируется.
+
+## Проверки профиля
+
+`test/profile/ProfileTest` содержит пять UI-тестов на отдельных пользователях из `@User`: сохранение имени, фамилии и аватара с чтением после перезагрузки, смена страны и сброс несохранённых изменений всех полей через Reset. Страны выбираются в фиксированном порядке: `Russian Federation` → `France` → `Canada`. Аватар проверяется по содержимому файла из `src/test/resources/images`, а не только по наличию изображения. Сохранение ожидает ответ операции GraphQL `UpdateUser` перед перезагрузкой.
+
+```powershell
+.\gradlew.bat :rfr-e2e:test --tests io.student.rangiffler.test.profile.ProfileTest
+```
