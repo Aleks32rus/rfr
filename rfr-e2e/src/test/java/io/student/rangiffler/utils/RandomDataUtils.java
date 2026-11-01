@@ -11,7 +11,7 @@ public final class RandomDataUtils {
     }
 
     public static String randomUsername() {
-        return "ui_" + UUID.randomUUID().toString().replace("-", "");
+        return "rfr_" + UUID.randomUUID().toString().replace("-", "");
     }
 
     public static String randomPassword() {
