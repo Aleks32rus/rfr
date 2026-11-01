@@ -18,6 +18,7 @@ public final class UserFixture implements AutoCloseable {
     private final TestUser user = new TestUser(UUID.randomUUID(),
             RandomDataUtils.randomUsername(), RandomDataUtils.randomPassword());
     private boolean created;
+    private boolean cleanupRequired = true;
 
     public TestUser user() {
         return user;
@@ -27,18 +28,19 @@ public final class UserFixture implements AutoCloseable {
         if (!created) {
             auth.create(user);
             created = true;
+            cleanupRequired = true;
         }
         return user;
     }
 
     @Override
     public void close() {
-        if (!created) {
+        if (!cleanupRequired) {
             return;
         }
         List<Runnable> actions = List.of(
                 () -> api.delete(user.username()),
-                () -> auth.delete(user));
+                () -> auth.delete(user.username()));
         List<RuntimeException> exceptions = new ArrayList<>();
         for (Runnable action : actions) {
             try {
@@ -53,5 +55,6 @@ public final class UserFixture implements AutoCloseable {
             throw failure;
         }
         created = false;
+        cleanupRequired = false;
     }
 }
