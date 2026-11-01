@@ -12,13 +12,13 @@
 
 Rangiffler — учебное приложение о путешествиях с фотографиями, странами, профилями и отношениями между пользователями. Полноценная микросервисная реализация является целью проекта; не считай все описанные в задании возможности уже реализованными.
 
-| Каталог | Назначение |
-| --- | --- |
-| `rfr-api` | Сервер GraphQL на Spring Boot, JPA, миграции Flyway, заглушки фотографий и ленты |
-| `rfr-auth` | Сервер авторизации OAuth2, регистрация, вход и шаблоны Thymeleaf |
-| `rfr-gql-client` | Клиент на React и TypeScript, Vite, Apollo Client и Material UI |
-| `rfr-e2e` | Заготовка тестов на JUnit Jupiter и Playwright Java с Allure |
-| `gradle` | Gradle Wrapper |
+| Каталог | Назначение | Правила модуля |
+| --- | --- | --- |
+| `rfr-api` | Сервер GraphQL на Spring Boot, JPA, миграции Flyway, заглушки фотографий и ленты | [AGENTS.md](rfr-api/AGENTS.md) |
+| `rfr-auth` | Сервер авторизации OAuth2, регистрация, вход и шаблоны Thymeleaf | [AGENTS.md](rfr-auth/AGENTS.md) |
+| `rfr-gql-client` | Клиент на React и TypeScript, Vite, Apollo Client и Material UI | [AGENTS.md](rfr-gql-client/AGENTS.md) |
+| `rfr-e2e` | Заготовка тестов на JUnit Jupiter и Playwright Java с Allure | [AGENTS.md](rfr-e2e/AGENTS.md) |
+| `gradle` | Gradle Wrapper | Отдельного AGENTS.md нет |
 
 Перед изменениями прочитай корневой `README.md`, README затрагиваемого модуля и соответствующий код. Основное пространство имён Java — `io.student.rangiffler`.
 

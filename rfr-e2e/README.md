@@ -136,3 +136,4 @@ try (UserFixture fixture = new UserFixture()) {
 ```powershell
 .\gradlew.bat :rfr-e2e:test --tests io.student.rangiffler.test.auth.LoginNegativeTest
 ```
+Доказательство корректности тестов - запуск gradle таски
