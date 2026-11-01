@@ -39,4 +39,14 @@ public final class AuthUserRepository {
             return null;
         });
     }
+
+    public void delete(String username) {
+        Jdbc.inTransaction(Databases.AUTH, client -> {
+            client.sql(Jdbc.sql("sql/auth/delete-authorities-by-username.sql"))
+                    .param("username", username).update();
+            client.sql(Jdbc.sql("sql/auth/delete-user-by-username.sql"))
+                    .param("username", username).update();
+            return null;
+        });
+    }
 }
