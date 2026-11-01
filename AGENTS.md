@@ -33,8 +33,11 @@ Rangiffler — учебное приложение о путешествиях �
 .\gradlew.bat :rfr-api:generateJava
 .\gradlew.bat :rfr-auth:bootRun
 .\gradlew.bat :rfr-api:bootRun
+.\gradlew.bat runAll --parallel --max-workers=2
 .\gradlew.bat :rfr-e2e:test
 ```
+
+`runAll` запускает auth и API одновременно; флаги `--parallel --max-workers=2` обязательны, поскольку оба `bootRun` работают до остановки. Перед запуском подготовь MySQL через `localenv.sh`. Клиент запускается отдельно.
 
 Команды клиентской части из каталога `rfr-gql-client`:
 
