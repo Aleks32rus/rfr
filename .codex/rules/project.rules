@@ -1,0 +1,24 @@
+# Разрешения относятся к командам этого проекта; рабочий каталог проверяется агентом.
+for wrapper in [[], ["rtk"], ["rtk", "proxy"]]:
+    prefix_rule(
+        pattern = wrapper + ["git", "push"],
+        decision = "forbidden",
+        justification = "Отправка изменений запрещена пользователем",
+    )
+    prefix_rule(
+        pattern = wrapper + [["rm", "Remove-Item", "remove-item", "del", "erase", "rmdir", "rd", "unlink"]],
+        decision = "forbidden",
+        justification = "Вместо удаления переименуйте файл или каталог в .<name>.<timestamp>.bak",
+    )
+    for executable in ["gradlew.bat", ".\\gradlew.bat", "./gradlew", "./gradlew.bat"]:
+        for task in [":rfr-auth:bootRun", ":rfr-api:bootRun", "runAll", "test", ":rfr-auth:test", ":rfr-api:test", ":rfr-e2e:test", "--stop"]:
+            prefix_rule(pattern = wrapper + [executable, task], decision = "allow")
+    for executable in ["npm", "npm.cmd"]:
+        for task in ["dev", "test"]:
+            prefix_rule(pattern = wrapper + [executable, "run", task], decision = "allow")
+        prefix_rule(pattern = wrapper + [executable, "test"], decision = "allow")
+    for action in ["start", "stop", "restart"]:
+        prefix_rule(pattern = wrapper + ["docker", "compose", action, "mysql"], decision = "allow")
+    prefix_rule(pattern = wrapper + ["docker", "compose", "up", "-d", "mysql", "--wait"], decision = "allow")
+# Идентификатор процесса допустим только после проверки его принадлежности проекту.
+prefix_rule(pattern = ["Stop-Process", "-Id"], decision = "allow")
