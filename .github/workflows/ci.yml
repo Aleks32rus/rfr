@@ -75,9 +75,32 @@ jobs:
 
   e2e:
     needs: changes
-    if: needs.changes.outputs.ci == 'true' || needs.changes.outputs.java == 'true' || needs.changes.outputs.e2e == 'true'
+    if: needs.changes.outputs.ci == 'true' || needs.changes.outputs.java == 'true' || needs.changes.outputs.e2e == 'true' || needs.changes.outputs.auth == 'true' || needs.changes.outputs.api == 'true' || needs.changes.outputs.frontend == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
+    services:
+      mysql:
+        image: mysql:8.4.7
+        env:
+          MYSQL_ROOT_PASSWORD: ${{ github.run_id }}-${{ github.run_attempt }}
+          MYSQL_ROOT_HOST: '%'
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --host=127.0.0.1 --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+          --health-start-period=30s
+    env:
+      SPRING_DATASOURCE_PASSWORD: ${{ github.run_id }}-${{ github.run_attempt }}
+      RFR_AUTH_DB_PASSWORD: ${{ github.run_id }}-${{ github.run_attempt }}
+      RFR_API_DB_PASSWORD: ${{ github.run_id }}-${{ github.run_attempt }}
+      VITE_AUTH_URL: http://localhost:9001
+      VITE_API_URL: http://localhost:8081
+      VITE_FRONT_HOST: localhost
+      VITE_FRONT_URL: http://localhost:3001
+      VITE_CLIENT_ID: client
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-java@v6
@@ -85,8 +108,60 @@ jobs:
           distribution: temurin
           java-version: '25'
           cache: gradle
-      - name: Скомпилировать E2E без запуска тестов
-        run: ./gradlew :rfr-e2e:testClasses --no-daemon
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: rfr-gql-client/package-lock.json
+      - name: Установить зависимости клиента
+        working-directory: rfr-gql-client
+        run: npm ci
+      - name: Установить Chromium и системные библиотеки
+        run: ./gradlew :rfr-e2e:installPlaywrightWithDeps --no-daemon
+      - name: Запустить бэкенды
+        run: ./gradlew runAll --parallel --max-workers=2 --no-daemon > "$RUNNER_TEMP/backends.log" 2>&1 &
+      - name: Запустить клиент
+        working-directory: rfr-gql-client
+        run: npm run dev -- --strictPort > "$RUNNER_TEMP/frontend.log" 2>&1 &
+      - name: Дождаться портов стенда
+        run: |
+          python3 - <<'PY'
+          import socket
+          import threading
+          import time
+
+          ports = {9001, 8081, 3001}
+          deadline = time.monotonic() + 180
+          interval = threading.Event()
+          while ports and time.monotonic() < deadline:
+              for port in sorted(ports):
+                  try:
+                      with socket.create_connection(("localhost", port), timeout=1):
+                          ports.remove(port)
+                          print(f"Порт {port} доступен", flush=True)
+                  except OSError:
+                      pass
+              if ports:
+                  interval.wait(min(1, max(0, deadline - time.monotonic())))
+          if ports:
+              raise SystemExit(f"Стенд не запустился за 180 секунд, недоступны порты: {sorted(ports)}")
+          PY
+      - name: Запустить E2E-тесты
+        run: ./gradlew :rfr-e2e:test --no-daemon
+      - name: Загрузить результаты Allure
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: allure-results
+          path: rfr-e2e/build/allure-results
+      - name: Показать логи стенда при ошибке
+        if: failure()
+        run: |
+          for log in "$RUNNER_TEMP/backends.log" "$RUNNER_TEMP/frontend.log"; do
+            if [ -f "$log" ]; then
+              cat "$log"
+            fi
+          done
 
   frontend:
     needs: changes
