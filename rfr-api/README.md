@@ -182,7 +182,7 @@ mutation CreatePhoto($input: PhotoInput!) {
 
 ## Ошибки
 
-HTTP-статус GraphQL-ответа - 200 и при ошибке; проверяйте `errors`. `GraphQlExceptionResolver` переводит исключения:
+Ошибки выполнения GraphQL могут возвращаться с HTTP 200; проверяйте `errors`. Невалидный Bearer-токен отклоняется фильтром с HTTP 401 до выполнения GraphQL. `GraphQlExceptionResolver` переводит исключения:
 
 | Исключение | `extensions.classification` | Пример `message` |
 |---|---|---|
@@ -224,13 +224,18 @@ UUID пользователя в `rangiffler-api` и `rangiffler-auth` неза�
 
 ```bash
 # из корня проекта: MySQL в Docker
-# внимание: localenv.sh останавливает и удаляет ВСЕ docker-контейнеры на машине
+# предварительно задай MYSQL_ROOT_PASSWORD в окружении или локальном .env
+# скрипт выполняет docker compose up -d mysql --wait
 bash localenv.sh
 
 cd rfr-api
 ../gradlew bootRun
 # или main class io.student.rangiffler.RangifflerApiApplication из IDE
 ```
+
+Другие контейнеры скрипт не останавливает и не удаляет; данные MySQL хранятся в томе `mysql-data`.
+Пароль подключения API должен соответствовать MySQL; при необходимости задай `SPRING_DATASOURCE_PASSWORD`
+в окружении API. Общий порядок запуска описан в [корневом README](../README.md#с-чего-начать).
 
 Проверка (access token можно взять в localStorage фронтенда после логина, ключ `access_token`):
 
