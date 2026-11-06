@@ -19,6 +19,9 @@
 - **react-svg-worldmap** - карта мира
 - **ESLint 10** (flat config, `eslint.config.js`), `typescript-eslint`
 
+Учитывай требования Node.js всего набора зависимостей: установленный ESLint 10 требует
+`^20.19.0 || ^22.13.0 || >=24`, поэтому минимальная версия Vite сама по себе недостаточна для запуска lint.
+
 ## Структура проекта
 
 ```
@@ -83,7 +86,7 @@ rfr-gql-client/src/
 6. Logout (`MenuAppBar`): `POST /oauth2/revoke` для access token -> очистка Apollo store ->
    `/connect/logout?id_token_hint=<id_token>&post_logout_redirect_uri=.../logout` -> `/logout` очищает localStorage.
 
-Access token живет 10 минут, refresh token публичному клиенту не выдается: после истечения пользователь входит заново
+Access token живет 30 минут (`access-token-time-to-live: 30m` в конфигурации auth), refresh token публичному клиенту не выдается: после истечения пользователь входит заново
 (пока жива сессия `rfr-auth`, без ввода пароля).
 
 ### localStorage

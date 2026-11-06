@@ -49,7 +49,7 @@ void databaseUserCanSignIn(Page page, @User TestUser user) {
 }
 ```
 
-Класс UI-теста должен быть помечен `@UsePlaywright` для получения `Page`. Аннотация `@User` находится в `io.student.rangiffler.junit.annotation`, модель — в `io.student.rangiffler.model`. Модель содержит `id`, `username`, `password`; пароль скрыт в `toString()`.
+Класс UI-теста должен быть помечен `@UsePlaywright` для получения `Page`. Аннотация `@User` находится в `io.student.rangiffler.junit.annotation`, модель `TestUser` — в `io.student.rangiffler.data`. Модель содержит `id`, `username`, `password`; пароль скрыт в `toString()`.
 
 Для каждого аннотированного параметра создаётся отдельный `UserFixture implements AutoCloseable`. Расширение сохраняет fixture в JUnit Store текущего теста и вызывает `create()` для получения `TestUser`. При завершении контекста теста JUnit 6 автоматически вызывает `close()`, в том числе после ошибки теста.
 
@@ -77,7 +77,7 @@ try (UserFixture fixture = new UserFixture()) {
 | `rfr.api.db.username` | `RFR_API_DB_USERNAME` | Имя пользователя БД API |
 | `rfr.api.db.password` | `RFR_API_DB_PASSWORD` | Пароль пользователя БД API |
 
-Значения подключения по умолчанию соответствуют локальной конфигурации auth. Для другого окружения передавай учётные данные через ENV или системные свойства.
+Настройки подключения должны соответствовать обеим работающим БД. `compose.yaml` требует `MYSQL_ROOT_PASSWORD`, но `TestConfig` не читает эту переменную автоматически: передай соответствующие `RFR_AUTH_DB_PASSWORD` и `RFR_API_DB_PASSWORD` через окружение тестов. При изменении адресов или пользователей БД переопредели также соответствующие ключи таблицы.
 
 Запуск проверки расширения через авторизацию в UI:
 
@@ -111,7 +111,7 @@ try (UserFixture fixture = new UserFixture()) {
 
 ## Соглашения Page Object
 
-Страницы следуют скиллу `.codex/skills/rfr-page-object/SKILL.md`: классы `final`, URL берутся из `TestConfig`, конструкторы только инициализируют поля. Имена методов отражают конкретные бизнес-действия: `fillRegistrationForm(...)` и `submitRegistration()` для регистрации, `fillLoginForm(...)` и `signIn()` для входа. Методы проверок используют web-first assertions без действий и предварительной проверки загрузки. Общая шапка выделена в `HeaderComponent` и подключается через композицию. Методы действий и проверок отмечены `@Step`; параметры форм записываются в Allure, пароль маскируется.
+Соглашения для новых и изменяемых Page Object описаны в `.agents/skills/rfr-page-objects/SKILL.md` и `rfr-e2e/AGENTS.md`. В существующих страницах классы `final`, URL берутся из `TestConfig`, конструкторы только инициализируют поля. Имена методов отражают конкретные бизнес-действия: `fillRegistrationForm(...)` и `submitRegistration()` для регистрации, `fillLoginForm(...)` и `signIn()` для входа. Методы проверок используют web-first assertions без действий и предварительной проверки загрузки. Общая шапка выделена в `HeaderComponent` и подключается через композицию. Методы действий и проверок отмечены `@Step`; параметры форм записываются в Allure, пароль маскируется.
 
 ## Основные элементы главной страницы
 
@@ -136,4 +136,4 @@ try (UserFixture fixture = new UserFixture()) {
 ```powershell
 .\gradlew.bat :rfr-e2e:test --tests io.student.rangiffler.test.auth.LoginNegativeTest
 ```
-Доказательство корректности тестов - запуск gradle таски
+Компиляция и ручное прохождение через MCP не заменяют запуск автотестов. Результат конкретного запуска проверяй в отчёте Gradle; наличие тестов в репозитории само по себе не подтверждает их успешное выполнение.
