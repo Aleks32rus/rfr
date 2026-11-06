@@ -33,7 +33,7 @@ function sources() {
 }
 
 function compilation(command, args, cwd) {
-  const windows = process.platform === 'win32';
+  const windows = process.platform === 'win32' && /\.(?:bat|cmd)$/i.test(command);
   const result = spawnSync(windows ? 'cmd.exe' : command, windows ? ['/d', '/s', '/c', [command, ...args].join(' ')] : args, {
     cwd,
     encoding: 'utf8',
@@ -87,6 +87,12 @@ function main() {
     }
     if (changes.some(file => file.startsWith('rfr-gql-client/'))) {
       output.push(compilation(process.platform === 'win32' ? 'npm.cmd' : 'npm', ['run', 'build'], join(root, 'rfr-gql-client')));
+    }
+    const frontend = join(root, 'rfr-gql-client');
+    const lint = changes.filter(file => file.startsWith('rfr-gql-client/') && /\.tsx?$/i.test(file) && Object.hasOwn(snapshot, file))
+      .map(file => relative(frontend, join(root, file)));
+    if (lint.length) {
+      output.push(compilation(process.execPath, [join(frontend, 'node_modules/eslint/bin/eslint.js'), '--report-unused-disable-directives', '--max-warnings', '0', '--', ...lint], frontend));
     }
     if (output.length) {
       feedback('PostToolUse', `Результат автоматической компиляции после изменения исходников:\n${output.join('\n\n')}\nПри ошибке исправь причину перед завершением задачи`);
