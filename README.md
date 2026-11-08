@@ -36,7 +36,7 @@ rfr/
 │   ├── Реальные контроллеры для пользователей и стран
 │   └── Flyway миграции БД
 ├── rfr-gql-client/        # React + TypeScript Frontend (готов)
-└── rfr-e2e/               # E2E тесты: JUnit 6 + Playwright + Allure 3 (заготовка)
+└── rfr-e2e/               # UI-тесты регистрации, входа и профиля; проверки JDBC и fixtures
 ```
 
 **Порты:**
@@ -76,11 +76,18 @@ Mock контроллеры возвращают статические данн
 
 #### 1. Запусти зависимости (БД):
 
+Нужны JDK 25, Docker с Compose и Node.js, совместимый с зависимостями клиента (см. [README клиента](rfr-gql-client/README.md)).
+Задай `MYSQL_ROOT_PASSWORD` через окружение или локальный `.env`, не добавляемый в Git.
+Пароль подключений auth и API должен совпадать с паролем MySQL: при необходимости передай `SPRING_DATASOURCE_PASSWORD`
+в окружение каждого сервиса. Для существующего тома используй действующий пароль: изменение переменной не меняет пароль в БД.
+
 ```bash
 bash localenv.sh
 ```
 
-Скрипт запустит MySQL в Docker контейнере.
+Скрипт выполняет `docker compose up -d mysql --wait`: поднимает MySQL из `compose.yaml` и ждёт готовности.
+Другие контейнеры не останавливаются и не удаляются, данные MySQL хранятся в прежнем томе с явным именем `mysql-volume`.
+В PowerShell выполни эту команду Docker напрямую из корня проекта.
 
 #### 2. Запусти rfr-auth:
 
@@ -100,13 +107,17 @@ cd rfr-api
 
 rfr-api стартанет на порту 8081: http://localhost:8081/graphql
 
-GraphiQL интерфейс доступен по адресу: http://localhost:8081/graphiql
+GraphiQL включён по адресу http://localhost:8081/graphiql, но GET страницы требует аутентификацию;
+простого открытия ссылки без Bearer-токена недостаточно.
 
-#### 4. Обнови зависимости и запускай фронт:
+Вместо отдельных запусков auth и API можно из корня выполнить `./gradlew runAll --parallel --max-workers=2`.
+В PowerShell используй `.\gradlew.bat runAll --parallel --max-workers=2`. Клиент запускается отдельно.
+
+#### 4. Установи зависимости и запусти фронт:
 
 ```bash
 cd rfr-gql-client
-npm i
+npm ci
 npm run dev
 ```
 
@@ -118,6 +129,21 @@ npm run dev
 
 Mock контроллеры в rfr-api будут возвращать статические данные из JSON файлов для ленты фотографий.
 Реальная работа с пользователями и странами уже реализована через базу данных.
+
+#### 6. Запусти тесты
+
+Для UI-тестов нужны работающие MySQL, auth, API, клиент и Chromium для версии Playwright из `rfr-e2e/build.gradle`.
+Подключения к обеим БД должны быть доступны тестам; настройки и отдельные сценарии описаны в [README E2E](rfr-e2e/README.md).
+
+```powershell
+# Из корня проекта: весь модуль, включая UI и проверки инфраструктуры
+.\gradlew.bat :rfr-e2e:test
+# Только проверка входа
+.\gradlew.bat :rfr-e2e:test --tests io.student.rangiffler.test.LoginTest
+```
+
+В Bash используй `./gradlew`. HTML-отчёт: `rfr-e2e/build/reports/tests/test/index.html`.
+Текущее покрытие не является полным покрытием приложения.
 
 
 # Что дальше?
@@ -268,7 +294,7 @@ generateJava {
 
 ###### Pageable в JpaRepository
 
-  Дело в том, что единственный способ получить функционал пагинации - это доставать данные из БД **одним запросом**.
+  Для пагинации на стороне БД передавайте `Pageable` в запрос репозитория, а не загружайте целиком коллекцию entity.
 
   Это значит, что если нам нужны допустим фотографии юзера с пагинацией, мы не можем сделать так:
 ```java
@@ -282,7 +308,7 @@ return user.getPhotos();
                                @Nonnull Pageable pageable);
 
 ```
-  Вот так уже сработает - тут всего один запрос, и поэтому он работает с `Pageable`.
+  Такой метод применяет `Pageable` к выборке. Для результата `Page` Spring Data также может выполнить отдельный запрос подсчёта элементов.
 
 ###### Дружба: одна строка на пару пользователей
 
@@ -319,9 +345,9 @@ public interface FriendshipRepository extends JpaRepository<FriendshipEntity, UU
 (ловим `OptimisticLockingFailureException`). Без явного flush SQL выполнится только на коммите транзакции - уже за пределами
 `try/catch` в методе сервиса.
 
-###### Списки пользователей со статусом дружбы одним запросом
+###### Списки пользователей со статусом дружбы в одной выборке
 
-  Все списки людей (All People, Friends, Income/Outcome invitations) достаются из БД одним запросом с пагинацией и сразу со статусом дружбы
+  Все списки людей (All People, Friends, Income/Outcome invitations) достаются из БД с пагинацией и сразу со статусом дружбы
 относительно текущего пользователя. Для этого используется projection - record `UserWithStatus`, который заполняется прямо в JPQL
 через `select new`:
 ```java
@@ -481,14 +507,15 @@ message UsersResponse {
 (`JwtAuthenticationConverter` в `RangifflerApiConfiguration`). `id_token` предназначен фронтенду (`aud` = client_id),
 поэтому API его отвергает с 401. Фронтенд использует `id_token` только как `id_token_hint` при logout.
 
-   Access token живет 10 минут. При logout фронтенд отзывает его через `POST /oauth2/revoke` (RFC 7009, публичный клиент
+   Access token живет 30 минут (`access-token-time-to-live: 30m` в конфигурации auth). При logout фронтенд отзывает его через `POST /oauth2/revoke` (RFC 7009, публичный клиент
 идентифицируется по `client_id`), а затем вызывает OIDC logout. Учтите: access token - самодостаточный JWT, `rfr-api`
 проверяет его локально по подписи и не знает об отзыве, поэтому отозванный токен продолжает приниматься API до `exp`.
 Отзыв делает недействительной авторизацию на стороне `rfr-auth`; мгновенный отказ API потребовал бы opaque-токенов
 и introspection.
 
-   Для локального тестирования вы можете открыть страницу
-GraphiQL (`spring.graphql.graphiql.enabled: true` уже включен в `application.yml`):
+   GraphiQL включён (`spring.graphql.graphiql.enabled: true` в `application.yml`), но GET страницы требует аутентификацию.
+Текущая конфигурация `RangifflerApiConfiguration` разрешает без аутентификации на уровне фильтра только `POST /graphql`
+и сохраняет преобразование claim `authorities`:
 ```java
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -497,14 +524,15 @@ GraphiQL (`spring.graphql.graphiql.enabled: true` уже включен в `appl
             .authorizeHttpRequests(customizer ->
                 customizer
                     .requestMatchers(HttpMethod.POST, "/graphql").permitAll()
-                    .requestMatchers(HttpMethod.GET, "/graphiql/**").permitAll()
                     .anyRequest().authenticated()
             )
-            .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()));
+            .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt
+                .jwtAuthenticationConverter(jwtAuthenticationConverter())
+            ));
         return http.build();
     }
 ```
-   Сами запросы из GraphiQL все равно потребуют токен - добавьте заголовок `Authorization: Bearer <access_token>` в разделе Headers
+   Если страница GraphiQL открыта с аутентификацией, сами запросы также требуют токен: добавьте заголовок `Authorization: Bearer <access_token>` в разделе Headers
 (токен можно взять в `localStorage` фронта после логина).
 
 ###### GraphQL контроллеры и @SchemaMapping
@@ -555,7 +583,8 @@ GraphiQL (`spring.graphql.graphiql.enabled: true` уже включен в `appl
 
 ###### Ошибки GraphQL
 
-  GraphQL отвечает HTTP 200 даже при ошибке - ошибка приходит в массиве `errors` ответа. Чтобы фронт мог показать пользователю
+  Ошибки выполнения GraphQL могут приходить с HTTP 200 в массиве `errors` ответа. Невалидный Bearer-токен
+отклоняется фильтром с HTTP 401 до выполнения GraphQL. Чтобы фронт мог показать пользователю
 понятный текст, а внутренние детали не утекали наружу, исключения классифицирует `GraphQlExceptionResolver`:
 
 | Исключение | `extensions.classification` |
