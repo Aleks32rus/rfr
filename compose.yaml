@@ -6,7 +6,7 @@ services:
     ports:
       - "3306:3306"
     volumes:
-      - mysql-data:/var/lib/mysql
+      - mysql-volume:/var/lib/mysql
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "--host=127.0.0.1", "--silent"]
       interval: 10s
@@ -15,4 +15,5 @@ services:
       start_period: 30s
 
 volumes:
-  mysql-data:
+  mysql-volume:
+    name: mysql-volume

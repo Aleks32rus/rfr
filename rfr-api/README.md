@@ -233,7 +233,7 @@ cd rfr-api
 # или main class io.student.rangiffler.RangifflerApiApplication из IDE
 ```
 
-Другие контейнеры скрипт не останавливает и не удаляет; данные MySQL хранятся в томе `mysql-data`.
+Другие контейнеры скрипт не останавливает и не удаляет; данные MySQL хранятся в прежнем томе с явным именем `mysql-volume`.
 Пароль подключения API должен соответствовать MySQL; при необходимости задай `SPRING_DATASOURCE_PASSWORD`
 в окружении API. Общий порядок запуска описан в [корневом README](../README.md#с-чего-начать).
 

@@ -200,7 +200,7 @@ cd rfr-auth
 # или main class io.student.rangiffler.RangifflerAuthApplication из IDE
 ```
 
-Другие контейнеры скрипт не останавливает и не удаляет; данные MySQL хранятся в томе `mysql-data`.
+Другие контейнеры скрипт не останавливает и не удаляет; данные MySQL хранятся в прежнем томе с явным именем `mysql-volume`.
 Пароль подключения auth должен соответствовать MySQL; при необходимости задай `SPRING_DATASOURCE_PASSWORD`
 в окружении auth. Общий порядок запуска описан в [корневом README](../README.md#с-чего-начать).
 
