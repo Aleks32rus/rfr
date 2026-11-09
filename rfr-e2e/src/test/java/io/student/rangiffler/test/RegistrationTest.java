@@ -3,6 +3,7 @@ package io.student.rangiffler.test;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.junit.UsePlaywright;
 import io.student.rangiffler.data.TestUser;
+import io.student.rangiffler.fixture.SingleUserFixture;
 import io.student.rangiffler.fixture.UserFixture;
 import io.student.rangiffler.page.LandingPage;
 import org.junit.jupiter.api.DisplayName;
@@ -19,7 +20,7 @@ public class RegistrationTest {
     @Test
     @DisplayName("После регистрации пользователь может войти в свой личный кабинет")
     void registeredUserCanSignIn(Page page) {
-        try (UserFixture fixture = new UserFixture()) {
+        try (UserFixture fixture = new SingleUserFixture()) {
             TestUser user = fixture.user();
             new LandingPage(page)
                     .open()
