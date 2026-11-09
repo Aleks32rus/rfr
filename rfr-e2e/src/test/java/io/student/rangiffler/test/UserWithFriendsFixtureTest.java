@@ -11,6 +11,7 @@ import io.student.rangiffler.fixture.UserWithFriendsFixture;
 import io.student.rangiffler.fixture.UserWithIncomeInvitations;
 import io.student.rangiffler.test.fake.FailingUserFixture;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -24,9 +25,11 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 /**
  * Проверяет подготовку связей и очистку всех участников декоратора.
  */
+@DisplayName("Подготовка и очистка друзей пользователя")
 final class UserWithFriendsFixtureTest {
     @Test
     @Tag("db")
+    @DisplayName("Подготовка пользователя сохраняет список друзей")
     void preparedUserCannotLoseFriends() {
         List<UserFixture> friends = Stream.<UserFixture>generate(SingleUserFixture::new).limit(5).toList();
         try (UserFixture fixture = new UserWithFriendsFixture(new SingleUserFixture(), friends)) {
@@ -40,6 +43,7 @@ final class UserWithFriendsFixtureTest {
 
     @Test
     @Tag("db")
+    @DisplayName("Добавление приглашений сохраняет подготовленных друзей")
     void invitationsCannotDiscardPreparedFriends() {
         List<UserFixture> friends = Stream.<UserFixture>generate(SingleUserFixture::new).limit(3).toList();
         List<UserFixture> invitations = Stream.<UserFixture>generate(SingleUserFixture::new).limit(2).toList();
@@ -55,6 +59,7 @@ final class UserWithFriendsFixtureTest {
 
     @Test
     @Tag("db")
+    @DisplayName("Добавление друзей сохраняет подготовленные приглашения")
     void friendsCannotDiscardPreparedInvitations() {
         List<UserFixture> friends = Stream.<UserFixture>generate(SingleUserFixture::new).limit(2).toList();
         List<UserFixture> invitations = Stream.<UserFixture>generate(SingleUserFixture::new).limit(4).toList();
@@ -70,6 +75,7 @@ final class UserWithFriendsFixtureTest {
 
     @Test
     @Tag("db")
+    @DisplayName("Повторная подготовка не дублирует друзей")
     void repeatedCreationCannotDuplicateFriends() {
         try (UserFixture fixture = new UserWithFriendsFixture(new SingleUserFixture(), 3)) {
             Friendships friendships = new Friendships(fixture.create());
@@ -81,6 +87,7 @@ final class UserWithFriendsFixtureTest {
 
     @Test
     @Tag("db")
+    @DisplayName("Закрытие фикстуры удаляет всех участников из обеих БД")
     void closingCannotLeaveParticipantsInEitherDatabase() {
         UserFixture owner = new SingleUserFixture(new TestUser(UUID.randomUUID(),
                 "owner_" + UUID.randomUUID(), "G8p3J6n2D9r4"));
@@ -94,6 +101,7 @@ final class UserWithFriendsFixtureTest {
     }
 
     @Test
+    @DisplayName("Ошибка подготовки не прерывает очистку и не скрывает её ошибки")
     void failedCreationCannotSkipCleanupOrLoseItsFailures() {
         List<String> history = new ArrayList<>();
         TestUser owner = new TestUser(UUID.randomUUID(), "owner_47", "K7e2c9R4");

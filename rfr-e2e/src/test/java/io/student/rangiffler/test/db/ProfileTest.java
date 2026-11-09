@@ -7,6 +7,7 @@ import io.student.rangiffler.data.db.Profile;
 import io.student.rangiffler.fixture.SingleUserFixture;
 import io.student.rangiffler.fixture.UserFixture;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.dao.DataIntegrityViolationException;
 
@@ -21,8 +22,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Проверяет профиль, обязательную страну и очистку связей владельца.
  */
 @Tag("db")
+@DisplayName("Профиль пользователя в БД")
 final class ProfileTest {
     @Test
+    @DisplayName("Созданный профиль присутствует в БД")
     void createdProfileCannotBeAbsentFromDatabase() {
         TestUser user = new TestUser(UUID.randomUUID(), "profile_" + UUID.randomUUID(), "M9c4V7s2Q8n3");
         try (UserFixture fixture = new SingleUserFixture(user)) {
@@ -32,6 +35,7 @@ final class ProfileTest {
     }
 
     @Test
+    @DisplayName("Создание профиля отклоняет неизвестную страну")
     void creationCannotUseUnknownCountry() {
         TestUser user = new TestUser(UUID.randomUUID(), "profile_" + UUID.randomUUID(), "H2f9W4k7J3v8");
         try (UserFixture fixture = new SingleUserFixture(user)) {
@@ -41,6 +45,7 @@ final class ProfileTest {
     }
 
     @Test
+    @DisplayName("Удаление профиля удаляет дружбу и сохраняет профиль второго участника")
     void deletionCannotLeaveFriendshipOrDeletePeerProfile() {
         try (UserFixture owner = new SingleUserFixture(new TestUser(UUID.randomUUID(),
                 "owner_" + UUID.randomUUID(), "D3r8B2p6T9k4"));

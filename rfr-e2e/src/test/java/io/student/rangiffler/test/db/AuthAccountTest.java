@@ -6,6 +6,7 @@ import io.student.rangiffler.data.db.Authorities;
 import io.student.rangiffler.fixture.SingleUserFixture;
 import io.student.rangiffler.fixture.UserFixture;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -17,8 +18,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * Проверяет согласованное создание и удаление аккаунта и прав.
  */
 @Tag("db")
+@DisplayName("Аккаунт пользователя в БД авторизации")
 final class AuthAccountTest {
     @Test
+    @DisplayName("Создание аккаунта сохраняет обязательные права пользователя")
     void creationCannotOmitAuthorities() {
         TestUser user = new TestUser(UUID.randomUUID(), "account_" + UUID.randomUUID(), "K8v3R6p2F9s4");
         try (UserFixture fixture = new SingleUserFixture(user)) {
@@ -29,6 +32,7 @@ final class AuthAccountTest {
     }
 
     @Test
+    @DisplayName("Удаление аккаунта удаляет его обязательные права")
     void deletionCannotLeaveAccountOrAuthorities() {
         TestUser user = new TestUser(UUID.randomUUID(), "account_" + UUID.randomUUID(), "P7m2Z9t4C6r3");
         try (UserFixture fixture = new SingleUserFixture(user)) {

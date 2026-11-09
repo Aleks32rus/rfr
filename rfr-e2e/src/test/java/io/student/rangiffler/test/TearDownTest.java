@@ -1,6 +1,7 @@
 package io.student.rangiffler.test;
 
 import io.student.rangiffler.fixture.TearDown;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -11,8 +12,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 /**
  * Проверяет отложенную очистку, неизменяемость цепочки и сохранение ошибок.
  */
+@DisplayName("Цепочка действий очистки")
 final class TearDownTest {
     @Test
+    @DisplayName("Построение цепочки не запускает очистку")
     void buildingCannotExecuteCleanup() {
         List<Integer> history = new ArrayList<>();
         new TearDown(List.of()).with(() -> history.add(17)).withEach(List.of(43, 29), history::add);
@@ -20,6 +23,7 @@ final class TearDownTest {
     }
 
     @Test
+    @DisplayName("Добавление действий сохраняет исходную цепочку очистки")
     void appendingCannotChangeOriginalChain() {
         List<Integer> history = new ArrayList<>();
         TearDown original = new TearDown(List.of(() -> history.add(17)));
@@ -29,6 +33,7 @@ final class TearDownTest {
     }
 
     @Test
+    @DisplayName("Очистка выполняет действия в порядке регистрации")
     void cleanupCannotChangeRegistrationOrder() {
         List<Integer> history = new ArrayList<>();
         new TearDown(List.of(() -> history.add(17))).withEach(List.of(43, 29), history::add)
@@ -37,6 +42,7 @@ final class TearDownTest {
     }
 
     @Test
+    @DisplayName("Изменения коллекции не влияют на построенную цепочку очистки")
     void eachCannotObserveLaterCollectionChanges() {
         List<Integer> history = new ArrayList<>();
         List<Integer> values = new ArrayList<>(List.of(43, 29));
@@ -47,6 +53,7 @@ final class TearDownTest {
     }
 
     @Test
+    @DisplayName("Ошибка не прерывает остальные действия очистки и сохраняет дополнительные ошибки")
     void failureCannotSkipRemainingActionsOrLoseSuppressedErrors() {
         List<String> history = new ArrayList<>();
         try (TearDown cleanup = new TearDown(List.of())
@@ -72,6 +79,7 @@ final class TearDownTest {
     }
 
     @Test
+    @DisplayName("Повторная ошибка не добавляется к самой себе как подавленная")
     void repeatedExceptionCannotSuppressItself() {
         IllegalStateException failure = new IllegalStateException("Не удалось очистить общий ресурс");
         List<RuntimeException> failures = new ArrayList<>();

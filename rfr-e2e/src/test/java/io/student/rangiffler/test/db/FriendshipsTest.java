@@ -6,6 +6,7 @@ import io.student.rangiffler.data.db.FriendshipStatus;
 import io.student.rangiffler.fixture.SingleUserFixture;
 import io.student.rangiffler.fixture.UserFixture;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -18,8 +19,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Проверяет симметрию дружбы, направление заявок и выборочное удаление связей.
  */
 @Tag("db")
+@DisplayName("Дружба и направленные приглашения в БД")
 final class FriendshipsTest {
     @Test
+    @DisplayName("Подтверждённая дружба не зависит от направления связи")
     void friendshipCannotDependOnRequesterDirection() {
         try (UserFixture owner = new SingleUserFixture(new TestUser(UUID.randomUUID(),
                 "owner_" + UUID.randomUUID(), "B8f3N6r2V9p4"));
@@ -32,6 +35,7 @@ final class FriendshipsTest {
     }
 
     @Test
+    @DisplayName("Входящее приглашение сохраняет направление от отправителя к получателю")
     void pendingInvitationCannotReverseDirection() {
         try (UserFixture owner = new SingleUserFixture(new TestUser(UUID.randomUUID(),
                 "owner_" + UUID.randomUUID(), "F2c7W9n4R8p3"));
@@ -46,6 +50,7 @@ final class FriendshipsTest {
     }
 
     @Test
+    @DisplayName("Удаление друзей сохраняет ожидающие приглашения")
     void deletingFriendsCannotDeletePendingInvitations() {
         try (UserFixture owner = new SingleUserFixture(new TestUser(UUID.randomUUID(),
                 "owner_" + UUID.randomUUID(), "G8r3H7m2D9v4"));

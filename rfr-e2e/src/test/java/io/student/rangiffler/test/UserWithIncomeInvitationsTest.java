@@ -9,6 +9,7 @@ import io.student.rangiffler.fixture.UserFixture;
 import io.student.rangiffler.fixture.UserWithIncomeInvitations;
 import io.student.rangiffler.test.fake.FailingUserFixture;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -22,9 +23,11 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 /**
  * Проверяет подготовку связей и очистку всех участников декоратора.
  */
+@DisplayName("Подготовка и очистка входящих приглашений")
 final class UserWithIncomeInvitationsTest {
     @Test
     @Tag("db")
+    @DisplayName("Подготовленный пользователь содержит отправителей входящих приглашений")
     void preparedUserCannotLoseIncomeInvitationSenders() {
         List<UserFixture> invitations = Stream.<UserFixture>generate(SingleUserFixture::new).limit(3).toList();
         try (UserFixture fixture = new UserWithIncomeInvitations(new SingleUserFixture(), invitations)) {
@@ -36,6 +39,7 @@ final class UserWithIncomeInvitationsTest {
 
     @Test
     @Tag("db")
+    @DisplayName("Повторная подготовка сохраняет отправителей входящих приглашений")
     void repeatedCreationCannotChangeIncomeInvitationSenders() {
         try (UserFixture fixture = new UserWithIncomeInvitations(new SingleUserFixture(), 4)) {
             TestUser user = fixture.create();
@@ -47,6 +51,7 @@ final class UserWithIncomeInvitationsTest {
 
     @Test
     @Tag("db")
+    @DisplayName("Повторная подготовка не дублирует приглашения и сохраняет их направление")
     void repeatedCreationCannotDuplicateOrReverseIncomeInvitations() {
         try (UserFixture fixture = new UserWithIncomeInvitations(new SingleUserFixture(), 5)) {
             Friendships friendships = new Friendships(fixture.create());
@@ -58,6 +63,7 @@ final class UserWithIncomeInvitationsTest {
 
     @Test
     @Tag("db")
+    @DisplayName("Закрытие фикстуры удаляет всех участников из обеих БД")
     void closingCannotLeaveParticipantsInEitherDatabase() {
         UserFixture owner = new SingleUserFixture(new TestUser(UUID.randomUUID(),
                 "owner_" + UUID.randomUUID(), "G8p3J6n2D9r4"));
@@ -71,6 +77,7 @@ final class UserWithIncomeInvitationsTest {
     }
 
     @Test
+    @DisplayName("Ошибка подготовки не прерывает очистку и не скрывает её ошибки")
     void failedCreationCannotSkipCleanupOrLoseItsFailures() {
         List<String> history = new ArrayList<>();
         TestUser owner = new TestUser(UUID.randomUUID(), "owner_47", "K7e2c9R4");

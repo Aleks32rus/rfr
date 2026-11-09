@@ -7,6 +7,7 @@ import io.student.rangiffler.data.db.Profile;
 import io.student.rangiffler.fixture.SingleUserFixture;
 import io.student.rangiffler.fixture.UserFixture;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -19,8 +20,10 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
  * Проверяет создание и очистку пользователя в auth и API.
  */
 @Tag("db")
+@DisplayName("Подготовка и очистка одного пользователя")
 final class SingleUserFixtureTest {
     @Test
+    @DisplayName("Фикстура создаёт аккаунт и профиль пользователя")
     void creationCannotLeaveUserWithoutProfile() {
         try (UserFixture fixture = new SingleUserFixture(new TestUser(UUID.randomUUID(),
                 "fixture_" + UUID.randomUUID(), "M7e4q9K2w8R5"))) {
@@ -32,6 +35,7 @@ final class SingleUserFixtureTest {
     }
 
     @Test
+    @DisplayName("Повторное закрытие фикстуры безопасно и удаляет аккаунт с профилем")
     void closingCannotLeaveUserAndProfileOrFailWhenRepeated() {
         UserFixture fixture = new SingleUserFixture(new TestUser(UUID.randomUUID(),
                 "fixture_" + UUID.randomUUID(), "M7e4q9K2w8R5"));
@@ -47,6 +51,7 @@ final class SingleUserFixtureTest {
     }
 
     @Test
+    @DisplayName("Закрытие фикстуры удаляет права пользователя")
     void closingCannotLeaveAuthorities() {
         TestUser user;
         try (UserFixture fixture = new SingleUserFixture(new TestUser(UUID.randomUUID(),
