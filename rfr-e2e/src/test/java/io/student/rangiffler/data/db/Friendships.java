@@ -43,7 +43,7 @@ public final class Friendships implements Relationships {
     @Override
     public boolean exist() {
         return Jdbc.client(Databases.API).sql(Jdbc.sql("sql/api/count-friendships.sql"))
-                .param("username", user.username()).query(Long.class).single() > 0;
+                .param("id", user.id().toString()).param("username", user.username()).query(Long.class).single() > 0;
     }
 
     @Override

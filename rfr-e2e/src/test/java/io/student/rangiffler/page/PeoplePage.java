@@ -34,36 +34,34 @@ public final class PeoplePage implements PeopleScreen {
     @Override
     @Step("Открыть страницу пользователей через меню")
     public PeoplePage open() {
-        page.getByRole(AriaRole.LINK, new Page.GetByRoleOptions().setName("People").setExact(true)).click();
+        page.waitForResponse(response -> operation(response, "GetFriends"),
+                () -> page.getByRole(AriaRole.LINK, new Page.GetByRoleOptions().setName("People").setExact(true))
+                        .click()).finished();
         return new PeoplePage(page);
     }
 
     @Override
     @Step("Открыть вкладку друзей")
     public PeoplePage friends() {
-        tabs.getByRole(AriaRole.TAB, new Locator.GetByRoleOptions().setName("Friends").setExact(true)).click();
-        return new PeoplePage(page, "GetFriends");
+        return selectTab("Friends", "GetFriends");
     }
 
     @Override
     @Step("Открыть вкладку всех пользователей")
     public PeoplePage allPeople() {
-        tabs.getByRole(AriaRole.TAB, new Locator.GetByRoleOptions().setName("All People").setExact(true)).click();
-        return new PeoplePage(page, "GetPeople");
+        return selectTab("All People", "GetPeople");
     }
 
     @Override
     @Step("Открыть вкладку входящих приглашений")
     public PeoplePage incomeInvitations() {
-        tabs.getByRole(AriaRole.TAB, new Locator.GetByRoleOptions().setName("Income invitations").setExact(true)).click();
-        return new PeoplePage(page, "GetInvitations");
+        return selectTab("Income invitations", "GetInvitations");
     }
 
     @Override
     @Step("Открыть вкладку исходящих приглашений")
     public PeoplePage outcomeInvitations() {
-        tabs.getByRole(AriaRole.TAB, new Locator.GetByRoleOptions().setName("Outcome invitations").setExact(true)).click();
-        return new PeoplePage(page, "GetOutcomeInvitations");
+        return selectTab("Outcome invitations", "GetOutcomeInvitations");
     }
 
     @Override
@@ -141,6 +139,44 @@ public final class PeoplePage implements PeopleScreen {
         assertThat(row(username).getByRole(AriaRole.BUTTON,
                 new Locator.GetByRoleOptions().setName("Remove").setExact(true))).isVisible();
         return this;
+    }
+
+    @Override
+    @Step("Проверить точный состав пользователей вкладки: {usernames}")
+    public PeoplePage shouldHavePeople(String... usernames) {
+        assertThat(root.getByRole(AriaRole.TABLE).locator("tbody tr > td:nth-child(2)"))
+                .hasText(usernames);
+        return this;
+    }
+
+    @Override
+    @Step("Проверить кнопки строки пользователя {username}: {actions}")
+    public PeoplePage shouldHaveActions(String username, String... actions) {
+        assertThat(row(username).getByRole(AriaRole.BUTTON)).hasText(actions);
+        return this;
+    }
+
+    @Override
+    @Step("Проверить ожидание принятия приглашения пользователем: {username}")
+    public PeoplePage shouldHaveWaitingInvitation(String username) {
+        assertThat(row(username).getByText("Waiting...", new Locator.GetByTextOptions().setExact(true))).isVisible();
+        return this;
+    }
+
+    @Override
+    @Step("Проверить пустое состояние вкладки пользователей")
+    public PeoplePage shouldBeEmpty() {
+        assertThat(root.getByRole(AriaRole.ALERT).or(root.getByText("There are no users yet",
+                new Locator.GetByTextOptions().setExact(true)))).hasText(new String[]{"There are no users yet"});
+        return this;
+    }
+
+    private PeoplePage selectTab(String name, String operation) {
+        Locator tab = tabs.getByRole(AriaRole.TAB, new Locator.GetByRoleOptions().setName(name).setExact(true));
+        if (!"true".equals(tab.getAttribute("aria-selected"))) {
+            page.waitForResponse(response -> operation(response, operation), tab::click).finished();
+        }
+        return new PeoplePage(page, operation);
     }
 
     private Locator row(String username) {

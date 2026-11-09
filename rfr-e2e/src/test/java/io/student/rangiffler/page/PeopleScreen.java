@@ -31,4 +31,12 @@ public interface PeopleScreen {
     PeoplePage shouldHaveOutgoingInvitation(String username);
 
     PeoplePage shouldHaveFriend(String username);
+
+    PeoplePage shouldHavePeople(String... usernames);
+
+    PeoplePage shouldHaveActions(String username, String... actions);
+
+    PeoplePage shouldHaveWaitingInvitation(String username);
+
+    PeoplePage shouldBeEmpty();
 }

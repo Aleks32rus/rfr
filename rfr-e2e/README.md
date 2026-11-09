@@ -34,7 +34,7 @@ Gradle передаёт свойства с префиксом `rfr.` в JVM т�
 
 ## Пользователь из БД через JUnit Extension
 
-`@User` поддерживает параметры `friends` и `incomeInvitations` типа `int` с начальным значением `0`, например `@User(friends = 2, incomeInvitations = 3) TestUser user`. Расширение преобразует аннотацию в `UserRequest`, получает `UserFixture` через `fixture()` и сохраняет её для автоматической очистки. Отрицательные количества запрещены. Метод `UserRequest.fixture()` оборачивает `SingleUserFixture` в `UserWithFriendsFixture` при `friends > 0`, затем в `UserWithIncomeInvitations` при `incomeInvitations > 0`. Первый декоратор создаёт дружбу со статусом `ACCEPTED`, второй — приглашения `PENDING` от дополнительных пользователей к основному. При нулевом количестве соответствующий декоратор не добавляется.
+`@User` поддерживает параметры `friends`, `incomeInvitations` и `outcomeInvitations` типа `int` с начальным значением `0`, например `@User(friends = 2, incomeInvitations = 3, outcomeInvitations = 4) TestUser user`. Расширение преобразует аннотацию в `UserRequest`, получает `UserFixture` через `fixture()` и сохраняет её для автоматической очистки. Отрицательные количества запрещены. Метод `UserRequest.fixture()` оборачивает `SingleUserFixture` в `UserWithFriendsFixture` при `friends > 0`, затем в `UserWithIncomeInvitations` при `incomeInvitations > 0`. Первый декоратор создаёт дружбу со статусом `ACCEPTED`, второй — приглашения `PENDING` от дополнительных пользователей к основному. При `outcomeInvitations > 0` внешним декоратором добавляется `UserWithOutcomeInvitationsFixture`: он создаёт приглашённых через `SingleUserFixture` и связи `PENDING` от основного пользователя к приглашённым. При нулевом количестве соответствующий декоратор не добавляется. `UserRequest(User user)` делегирует все счётчики в основной конструктор, поэтому `UserExtension` не меняется при добавлении атрибутов аннотации.
 
 Аннотация параметра `@User` автоматически подключает `UserExtension`. Расширение создаёт пользователя через Spring JDBC и передаёт его в тест как `TestUser`:
 
@@ -51,7 +51,7 @@ void databaseUserCanSignIn(Page page, @User TestUser user) {
 }
 ```
 
-Класс UI-теста должен быть помечен `@UsePlaywright` для получения `Page`. Аннотация `@User` находится в `io.student.rangiffler.junit.annotation`, модель `TestUser` — в `io.student.rangiffler.data`. Модель содержит `id`, `username`, `password`; пароль скрыт в `toString()`.
+Класс UI-теста должен быть помечен `@UsePlaywright` для получения `Page`. Аннотация `@User` находится в `io.student.rangiffler.junit.annotation`, модель `TestUser` — в `io.student.rangiffler.data`. Модель содержит `id`, `username`, `password` и неизменяемые списки `friends`, `incomeInvitations`, `outcomeInvitations`; `withOutcomeInvitations(...)` возвращает новый снимок с сохранением остальных данных; пароль скрыт в `toString()`.
 
 Для каждого аннотированного параметра создаётся отдельная цепочка фикстур с общим интерфейсом `UserFixture extends AutoCloseable`. Расширение сохраняет fixture в JUnit Store текущего теста и вызывает `create()` для получения `TestUser`. При завершении контекста теста JUnit 6 автоматически вызывает `close()`, в том числе после ошибки теста.
 
@@ -171,7 +171,7 @@ new TearDown()
     .close();
 ```
 
-Ошибка действия не останавливает остальные действия. После выполнения цепочки первая `RuntimeException` выбрасывается повторно, остальные ошибки добавляются к ней как suppressed. Один и тот же экземпляр ошибки не добавляется к самому себе. `SingleUserFixture` использует эту цепочку для удаления связей, профиля и auth, а оба декоратора — для освобождения дополнительных пользователей и вложенной фикстуры. Проверки состояния и сброс состояния после успешной очистки остаются в самих фикстурах.
+Ошибка действия не останавливает остальные действия. После выполнения цепочки первая `RuntimeException` выбрасывается повторно, остальные ошибки добавляются к ней как suppressed. Один и тот же экземпляр ошибки не добавляется к самому себе. `SingleUserFixture` использует эту цепочку для удаления связей, профиля и auth, а декораторы — для освобождения дополнительных пользователей и вложенной фикстуры. Проверки состояния и сброс состояния после успешной очистки остаются в самих фикстурах.
 
 ## E2E-проверка прекондишенов и действий с дружбой
 
@@ -195,3 +195,30 @@ new TearDown()
 ```powershell
 .\gradlew.bat :rfr-e2e:test --tests io.student.rangiffler.test.UserExtensionTest --console=plain --no-parallel
 ```
+## Вкладки People
+
+`test/people/FriendsTabTest`, `IncomeInvitationsTabTest` и `OutcomeInvitationsTabTest` содержат 10 UI-проверок: точный состав пользователей без чужих связей, набор кнопок строк и пустое состояние. Для исходящих приглашений отдельно проверяется метка `Waiting...`. Кнопки Remove, Accept, Decline и Cancel проверяются по наличию и не нажимаются.
+
+Для проверки состава используются два независимых `@User` с одной соответствующей связью у каждого: всего четыре пользователя. Для кнопок и метки достаточно одного `@User` с одной связью, для пустого состояния — одного пользователя без связей. Все данные очищаются через Store расширения, браузерными ресурсами управляет `@UsePlaywright`. Локаторы, действия вкладок и web-first проверки находятся в `PeoplePage`; открытие страницы и смена вкладки ожидают завершения соответствующей GraphQL-операции.
+
+```powershell
+.\gradlew.bat :rfr-e2e:test --tests io.student.rangiffler.test.people.FriendsTabTest --tests io.student.rangiffler.test.people.IncomeInvitationsTabTest --tests io.student.rangiffler.test.people.OutcomeInvitationsTabTest --console=plain --no-parallel
+```
+## Пул пользователей через StaticUser
+
+`@StaticUser TestUser user` подключает `UsersQueueExtension`, когда создавать пользователей на лету нельзя. В `StaticUserFixture` находится одна статическая потокобезопасная очередь на JVM из трёх демонстрационных пар username/password; они не создаются в БД и не требуют работающего стенда. Для реального входа пары должны соответствовать уже существующим аккаунтам.
+
+Расширение сохраняет фикстуру в отдельном JUnit Store по индексу параметра до вызова `create()`. Фикстура получает пользователя из очереди с таймаутом три секунды; повторный `create()` до закрытия возвращает того же пользователя. При исчерпании пула выдаётся понятная ошибка, прерывание ожидания сохраняется. `close()` возвращает только взятого пользователя, повторное закрытие безопасно; SQL, удаление и изменение данных БД не выполняются. Возврат не восстанавливает изменения, внесённые тестом в аккаунт: такие тесты должны отдельно определять допустимое состояние данных.
+
+`UsersQueueExtensionTest` через `EngineTestKit` проверяет четыре последовательных выполнения на пуле из трёх и возврат после намеренного падения. События фиксируются через `TestReporter` без паролей. `StaticUserFixtureTest` проверяет повторное получение, таймаут, отсутствие лишних возвратов и конкурентную выдачу четырём потокам. Для этих тестов не нужны БД, приложение или браузер.
+
+```powershell
+.\gradlew.bat :rfr-e2e:test --tests io.student.rangiffler.test.UsersQueueExtensionTest --tests io.student.rangiffler.test.StaticUserFixtureTest --console=plain --no-parallel
+```
+## Изоляция мишеней и проверки очистки
+
+Внутренние сценарии `UserExtensionTest` и `UsersQueueExtensionTest` помечены `@ProbeTarget`. Условие `ProbeTargetCondition` по умолчанию отключает их; соответствующий внешний тест разрешает выполнение только параметром `rfr.probe.targets.enabled=true` своего запуска `EngineTestKit`. Системные свойства и общий флаг JVM не используются. Отдельная проверка запускает мишень без разрешения и ожидает пропуск без получения пользователя.
+
+`UsersQueueExtensionTest` после завершения движка дополнительно получает весь пул и сравнивает UUID с тремя исходными пользователями, затем возвращает их через `close()`. `UserExtensionTest` проверяет отсутствие связей всех 26 участников своих сценариев после закрытия Store. `Friendships.exist()` ищет строки и по UUID, и по логину: проверка очистки продолжает работать после удаления профиля API.
+
+Обычные тесты создают собственных пользователей через `@User` или локальную фикстуру; регистрация создаёт пользователя через UI под управлением `SingleUserFixture`. Демонстрационный общий пул используется только проверками `@StaticUser` и его фикстуры. `UserExtensionTest` обращается только к Jupiter и БД, браузер ему не требуется.

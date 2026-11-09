@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -21,6 +22,22 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Tag("db")
 @DisplayName("Дружба и направленные приглашения в БД")
 final class FriendshipsTest {
+    @Test
+    @DisplayName("Проверка по UUID видит связи без совпадения логина и их последующую очистку")
+    void friendshipLookupCannotDependOnlyOnUsername() {
+        List<Boolean> history = new ArrayList<>();
+        TestUser user = new TestUser(UUID.randomUUID(), "owner_" + UUID.randomUUID(), "S7r2Q9m4B6v3");
+        TestUser alias = new TestUser(user.id(), "absent_" + UUID.randomUUID(), "D9k3W8p2V6n4");
+        try (UserFixture owner = new SingleUserFixture(user);
+             UserFixture peer = new SingleUserFixture()) {
+            new Friendships(owner.create()).create(peer.create(), FriendshipStatus.PENDING);
+            history.add(new Friendships(alias).exist());
+        }
+        history.add(new Friendships(alias).exist());
+        assertEquals(List.of(true, false), history,
+                "Проверка связей по UUID не должна зависеть только от логина или пропускать оставшиеся строки");
+    }
+
     @Test
     @DisplayName("Подтверждённая дружба не зависит от направления связи")
     void friendshipCannotDependOnRequesterDirection() {
