@@ -75,6 +75,8 @@ jobs:
 
   e2e:
     needs: changes
+    outputs:
+      allure-report-ready: ${{ steps.allure-pages-artifact.outcome == 'success' }}
     if: needs.changes.outputs.ci == 'true' || needs.changes.outputs.java == 'true' || needs.changes.outputs.e2e == 'true' || needs.changes.outputs.auth == 'true' || needs.changes.outputs.api == 'true' || needs.changes.outputs.frontend == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -148,12 +150,22 @@ jobs:
           PY
       - name: Запустить E2E-тесты
         run: ./gradlew :rfr-e2e:test --no-daemon
-      - name: Загрузить результаты Allure
+      - name: Сохранить исходные результаты Allure
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: allure-results
           path: rfr-e2e/build/allure-results
+      - name: Сформировать HTML-отчёт Allure
+        id: allure-report
+        if: ${{ !cancelled() && hashFiles('rfr-e2e/build/allure-results/*-result.json') != '' }}
+        run: ./gradlew :rfr-e2e:allureReport --no-daemon
+      - name: Подготовить Allure-отчёт для GitHub Pages
+        id: allure-pages-artifact
+        if: ${{ !cancelled() && steps.allure-report.outcome == 'success' && github.event.pull_request.head.repo.full_name == github.repository }}
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: rfr-e2e/build/reports/allure-report/allureReport
       - name: Показать логи стенда при ошибке
         if: failure()
         run: |
@@ -162,6 +174,34 @@ jobs:
               cat "$log"
             fi
           done
+
+  allure-pages:
+    name: Опубликовать Allure-отчёт
+    needs: e2e
+    if: ${{ !cancelled() && needs.e2e.outputs.allure-report-ready == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    concurrency:
+      group: allure-pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Настроить GitHub Pages
+        uses: actions/configure-pages@v6
+      - name: Опубликовать Allure-отчёт
+        id: deployment
+        uses: actions/deploy-pages@v5
+      - name: Показать ссылку на Allure-отчёт
+        env:
+          REPORT_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          printf 'Allure report URL: %s\n' "$REPORT_URL"
+          printf '### Allure\n\n[Открыть Allure-отчёт](%s)\n\nПо ссылке доступен последний опубликованный отчёт.\n' "$REPORT_URL" >> "$GITHUB_STEP_SUMMARY"
 
   frontend:
     needs: changes
