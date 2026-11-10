@@ -1,0 +1,87 @@
+package io.student.rangiffler.test.db;
+
+import io.student.rangiffler.data.TestUser;
+import io.student.rangiffler.data.db.Friendships;
+import io.student.rangiffler.data.db.FriendshipStatus;
+import io.student.rangiffler.fixture.SingleUserFixture;
+import io.student.rangiffler.fixture.UserFixture;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+/**
+ * Проверяет симметрию дружбы, направление заявок и выборочное удаление связей.
+ */
+@Tag("db")
+@DisplayName("Дружба и направленные приглашения в БД")
+final class FriendshipsTest {
+    @Test
+    @DisplayName("Проверка по UUID видит связи без совпадения логина и их последующую очистку")
+    void friendshipLookupCannotDependOnlyOnUsername() {
+        List<Boolean> history = new ArrayList<>();
+        TestUser user = new TestUser(UUID.randomUUID(), "owner_" + UUID.randomUUID(), "S7r2Q9m4B6v3");
+        TestUser alias = new TestUser(user.id(), "absent_" + UUID.randomUUID(), "D9k3W8p2V6n4");
+        try (UserFixture owner = new SingleUserFixture(user);
+             UserFixture peer = new SingleUserFixture()) {
+            new Friendships(owner.create()).create(peer.create(), FriendshipStatus.PENDING);
+            history.add(new Friendships(alias).exist());
+        }
+        history.add(new Friendships(alias).exist());
+        assertEquals(List.of(true, false), history,
+                "Проверка связей по UUID не должна зависеть только от логина или пропускать оставшиеся строки");
+    }
+
+    @Test
+    @DisplayName("Подтверждённая дружба не зависит от направления связи")
+    void friendshipCannotDependOnRequesterDirection() {
+        try (UserFixture owner = new SingleUserFixture(new TestUser(UUID.randomUUID(),
+                "owner_" + UUID.randomUUID(), "B8f3N6r2V9p4"));
+             UserFixture peer = new SingleUserFixture(new TestUser(UUID.randomUUID(),
+                     "peer_" + UUID.randomUUID(), "J4s9T2m7C8v3"))) {
+            new Friendships(owner.create()).create(peer.create(), FriendshipStatus.ACCEPTED);
+            assertTrue(new Friendships(peer.user()).exist(owner.user(), FriendshipStatus.ACCEPTED),
+                    "Дружба не должна зависеть от того, кто отправил исходное приглашение");
+        }
+    }
+
+    @Test
+    @DisplayName("Входящее приглашение сохраняет направление от отправителя к получателю")
+    void pendingInvitationCannotReverseDirection() {
+        try (UserFixture owner = new SingleUserFixture(new TestUser(UUID.randomUUID(),
+                "owner_" + UUID.randomUUID(), "F2c7W9n4R8p3"));
+             UserFixture peer = new SingleUserFixture(new TestUser(UUID.randomUUID(),
+                     "peer_" + UUID.randomUUID(), "T6m3K8v2P9b4"))) {
+            new Friendships(owner.create()).create(peer.create(), FriendshipStatus.PENDING);
+            assertEquals(List.of(true, false), List.of(
+                            new Friendships(owner.user()).exist(peer.user(), FriendshipStatus.PENDING),
+                            new Friendships(peer.user()).exist(owner.user(), FriendshipStatus.PENDING)),
+                    "Входящее приглашение не должно становиться исходящим при проверке второго участника");
+        }
+    }
+
+    @Test
+    @DisplayName("Удаление друзей сохраняет ожидающие приглашения")
+    void deletingFriendsCannotDeletePendingInvitations() {
+        try (UserFixture owner = new SingleUserFixture(new TestUser(UUID.randomUUID(),
+                "owner_" + UUID.randomUUID(), "G8r3H7m2D9v4"));
+             UserFixture friend = new SingleUserFixture(new TestUser(UUID.randomUUID(),
+                     "friend_" + UUID.randomUUID(), "V3n9C4p7J2s8"));
+             UserFixture sender = new SingleUserFixture(new TestUser(UUID.randomUUID(),
+                     "sender_" + UUID.randomUUID(), "N4b7W2r9F3k8"))) {
+            Friendships friendships = new Friendships(owner.create());
+            friendships.create(friend.create(), FriendshipStatus.ACCEPTED);
+            new Friendships(sender.create()).create(owner.user(), FriendshipStatus.PENDING);
+            friendships.delete(FriendshipStatus.ACCEPTED);
+            assertEquals(List.of(false, true), List.of(friendships.exist(friend.user(), FriendshipStatus.ACCEPTED),
+                            new Friendships(sender.user()).exist(owner.user(), FriendshipStatus.PENDING)),
+                    "Удаление друзей не должно затрагивать ожидающие приглашения");
+        }
+    }
+}

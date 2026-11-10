@@ -30,10 +30,11 @@ dependencies {
     testImplementation "com.microsoft.playwright:playwright:$playwrightVersion"
 
     testImplementation "org.junit.jupiter:junit-jupiter"
+    testImplementation "org.junit.platform:junit-platform-testkit"
     testImplementation 'org.springframework:spring-jdbc'
     testImplementation 'org.springframework.security:spring-security-crypto'
     testRuntimeOnly 'com.mysql:mysql-connector-j'
-    testRuntimeOnly "org.junit.platform:junit-platform-launcher"
+    testImplementation "org.junit.platform:junit-platform-launcher"
     testRuntimeOnly "org.aspectj:aspectjrt:$aspectJVersion"
 }
 
@@ -45,8 +46,17 @@ allure {
     }
 }
 
+tasks.register('installPlaywrightWithDeps', JavaExec) {
+    group = 'verification'
+    description = 'Устанавливает Chromium и системные библиотеки для E2E в CI'
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.microsoft.playwright.CLI'
+    args 'install', '--with-deps', 'chromium'
+}
+
 test {
     useJUnitPlatform()
+    systemProperty 'allure.results.directory', layout.buildDirectory.dir('allure-results').get().asFile.absolutePath
     System.properties.findAll { key, value -> key.toString().startsWith('rfr.') }.each { key, value ->
         systemProperty key.toString(), value
     }
