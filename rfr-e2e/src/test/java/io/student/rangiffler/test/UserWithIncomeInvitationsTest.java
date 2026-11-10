@@ -8,8 +8,8 @@ import io.student.rangiffler.fixture.SingleUserFixture;
 import io.student.rangiffler.fixture.UserFixture;
 import io.student.rangiffler.fixture.UserWithIncomeInvitations;
 import io.student.rangiffler.test.fake.FailingUserFixture;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
@@ -25,6 +26,20 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
  */
 @DisplayName("Подготовка и очистка входящих приглашений")
 final class UserWithIncomeInvitationsTest {
+    @Test
+    @DisplayName("Добавление входящих приглашений сохраняет исходящие приглашения вложенной фикстуры")
+    void incomeInvitationsCannotDiscardPreparedOutcomeInvitations() {
+        TestUser invitation = new TestUser(UUID.randomUUID(), "invitee_" + UUID.randomUUID(), "N8r3W6c2J9p4");
+        TestUser user = new TestUser(UUID.randomUUID(), "owner_" + UUID.randomUUID(), "B7s2K9v4M6n3")
+                .withOutcomeInvitations(List.of(invitation));
+        try (UserFixture fixture = new UserWithIncomeInvitations(
+                new FailingUserFixture(user, new ArrayList<>(), false, false), List.of())) {
+            assertThat(fixture.create().outcomeInvitations())
+                    .as("Декоратор входящих приглашений не должен терять исходящие приглашения вложенной фикстуры")
+                    .containsExactly(invitation);
+        }
+    }
+
     @Test
     @Tag("db")
     @DisplayName("Подготовленный пользователь содержит отправителей входящих приглашений")

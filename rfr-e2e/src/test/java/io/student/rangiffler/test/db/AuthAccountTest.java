@@ -3,10 +3,10 @@ package io.student.rangiffler.test.db;
 import io.student.rangiffler.data.TestUser;
 import io.student.rangiffler.data.db.AuthAccount;
 import io.student.rangiffler.data.db.Authorities;
-import io.student.rangiffler.fixture.SingleUserFixture;
-import io.student.rangiffler.fixture.UserFixture;
-import org.junit.jupiter.api.Tag;
+import io.student.rangiffler.fixture.ReservedUserFixture;
+import io.student.rangiffler.fixture.UserReservation;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -24,9 +24,9 @@ final class AuthAccountTest {
     @DisplayName("Создание аккаунта сохраняет обязательные права пользователя")
     void creationCannotOmitAuthorities() {
         TestUser user = new TestUser(UUID.randomUUID(), "account_" + UUID.randomUUID(), "K8v3R6p2F9s4");
-        try (UserFixture fixture = new SingleUserFixture(user)) {
+        try (UserReservation fixture = new ReservedUserFixture(user)) {
             new AuthAccount(user).create();
-            assertEquals(List.of(true, true), List.of(new AuthAccount(user).exist(), new Authorities(user).exist()),
+            assertEquals(List.of(true, true), List.of(new AuthAccount(user).exist(), new Authorities(user).complete()),
                     "Аккаунт не должен создаваться без обязательных прав");
         }
     }
@@ -35,7 +35,7 @@ final class AuthAccountTest {
     @DisplayName("Удаление аккаунта удаляет его обязательные права")
     void deletionCannotLeaveAccountOrAuthorities() {
         TestUser user = new TestUser(UUID.randomUUID(), "account_" + UUID.randomUUID(), "P7m2Z9t4C6r3");
-        try (UserFixture fixture = new SingleUserFixture(user)) {
+        try (UserReservation fixture = new ReservedUserFixture(user)) {
             AuthAccount account = new AuthAccount(user);
             account.create();
             account.delete();

@@ -1,8 +1,8 @@
 package io.student.rangiffler.fixture;
 
 import io.student.rangiffler.data.TestUser;
-import io.student.rangiffler.data.db.Friendships;
 import io.student.rangiffler.data.db.FriendshipStatus;
+import io.student.rangiffler.data.db.Friendships;
 
 import java.util.HashSet;
 import java.util.List;
@@ -33,7 +33,7 @@ public final class UserWithFriendsFixture implements UserFixture {
         TestUser user = origin.user();
         return new TestUser(user.id(), user.username(), user.password(), user.incomeInvitations(),
                 Stream.concat(user.friends().stream(), friends.stream()
-                        .map(UserFixture::user).filter(friend -> linked.contains(friend.id()))).toList());
+                        .map(UserFixture::user).filter(friend -> linked.contains(friend.id()))).toList(), user.outcomeInvitations());
     }
 
     @Override

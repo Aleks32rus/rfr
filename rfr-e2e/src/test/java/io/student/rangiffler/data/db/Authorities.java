@@ -7,7 +7,7 @@ import java.util.UUID;
 /**
  * Управляет обязательными правами read и write конкретного аккаунта.
  */
-public final class Authorities implements StoredData {
+public final class Authorities implements RequiredAuthorities {
     private final TestUser user;
 
     public Authorities(TestUser user) {
@@ -32,6 +32,12 @@ public final class Authorities implements StoredData {
     @Override
     public boolean exist() {
         return Jdbc.client(Databases.AUTH).sql(Jdbc.sql("sql/auth/count-authorities-by-username.sql"))
+                .param("username", user.username()).query(Long.class).single() > 0;
+    }
+
+    @Override
+    public boolean complete() {
+        return Jdbc.client(Databases.AUTH).sql(Jdbc.sql("sql/auth/count-required-authorities-by-username.sql"))
                 .param("username", user.username()).query(Long.class).single() == 2;
     }
 }

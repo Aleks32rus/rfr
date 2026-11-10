@@ -34,7 +34,7 @@ dependencies {
     testImplementation 'org.springframework:spring-jdbc'
     testImplementation 'org.springframework.security:spring-security-crypto'
     testRuntimeOnly 'com.mysql:mysql-connector-j'
-    testRuntimeOnly "org.junit.platform:junit-platform-launcher"
+    testImplementation "org.junit.platform:junit-platform-launcher"
     testRuntimeOnly "org.aspectj:aspectjrt:$aspectJVersion"
 }
 

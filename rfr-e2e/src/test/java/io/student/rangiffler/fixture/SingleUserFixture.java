@@ -18,7 +18,7 @@ public final class SingleUserFixture implements UserFixture {
     private final TestUser user;
     private final StoredData account;
     private final StoredData profile;
-    private final Set<Stage> stages = EnumSet.of(Stage.CLEANUP);
+    private final Set<Stage> stages = EnumSet.noneOf(Stage.class);
 
     public SingleUserFixture() {
         this(new TestUser(UUID.randomUUID(), RandomDataUtils.randomUsername(), RandomDataUtils.randomPassword()));
@@ -41,7 +41,6 @@ public final class SingleUserFixture implements UserFixture {
 
     @Override
     public TestUser create() {
-        stages.add(Stage.CLEANUP);
         if (!stages.contains(Stage.AUTH)) {
             account.create();
             stages.add(Stage.AUTH);
@@ -55,10 +54,14 @@ public final class SingleUserFixture implements UserFixture {
 
     @Override
     public void close() {
-        if (!stages.contains(Stage.CLEANUP)) {
-            return;
+        TearDown cleanup = new TearDown();
+        if (stages.contains(Stage.PROFILE)) {
+            cleanup = cleanup.with(new Friendships(user)::delete).with(profile::delete);
         }
-        new TearDown().with(new Friendships(user)::delete).with(profile::delete).with(account::delete).close();
+        if (stages.contains(Stage.AUTH)) {
+            cleanup = cleanup.with(account::delete);
+        }
+        cleanup.close();
         stages.clear();
     }
 
@@ -66,6 +69,6 @@ public final class SingleUserFixture implements UserFixture {
      * Отмечает завершённые этапы подготовки и необходимость очистки.
      */
     private enum Stage {
-        AUTH, PROFILE, CLEANUP
+        AUTH, PROFILE
     }
 }

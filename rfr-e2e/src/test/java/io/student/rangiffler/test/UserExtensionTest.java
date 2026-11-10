@@ -1,14 +1,14 @@
 package io.student.rangiffler.test;
 
 import io.student.rangiffler.data.TestUser;
-import io.student.rangiffler.junit.annotation.ProbeTarget;
-import io.student.rangiffler.junit.engine.ProbeEngine;
 import io.student.rangiffler.data.db.AuthAccount;
 import io.student.rangiffler.data.db.Authorities;
-import io.student.rangiffler.data.db.Friendships;
 import io.student.rangiffler.data.db.FriendshipStatus;
+import io.student.rangiffler.data.db.Friendships;
 import io.student.rangiffler.data.db.Profile;
+import io.student.rangiffler.junit.annotation.ProbeTarget;
 import io.student.rangiffler.junit.annotation.User;
+import io.student.rangiffler.junit.engine.ProbeEngine;
 import io.student.rangiffler.junit.extension.UserExtension;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -18,8 +18,8 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestReporter;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.platform.engine.TestExecutionResult;
 import org.junit.platform.engine.DiscoverySelector;
+import org.junit.platform.engine.TestExecutionResult;
 import org.junit.platform.engine.reporting.ReportEntry;
 import org.junit.platform.testkit.engine.EngineExecutionResults;
 import org.junit.platform.testkit.engine.EngineTestKit;
@@ -266,7 +266,7 @@ final class UserExtensionTest {
             reporter.publishEntry(Map.of("event", event, "stage", stage, "id", user.id().toString(),
                     "username", user.username(), "auth", Boolean.toString(new AuthAccount(user).exist()),
                     "profile", Boolean.toString(new Profile(user).exist()),
-                    "authorities", Boolean.toString(new Authorities(user).exist())));
+                    "authorities", Boolean.toString(new Authorities(user).complete())));
         }
     }
 

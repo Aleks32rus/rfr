@@ -2,16 +2,16 @@ package io.student.rangiffler.test;
 
 import io.student.rangiffler.data.TestUser;
 import io.student.rangiffler.data.db.AuthAccount;
-import io.student.rangiffler.data.db.Friendships;
 import io.student.rangiffler.data.db.FriendshipStatus;
+import io.student.rangiffler.data.db.Friendships;
 import io.student.rangiffler.data.db.Profile;
 import io.student.rangiffler.fixture.SingleUserFixture;
 import io.student.rangiffler.fixture.UserFixture;
 import io.student.rangiffler.fixture.UserWithFriendsFixture;
 import io.student.rangiffler.fixture.UserWithIncomeInvitations;
 import io.student.rangiffler.test.fake.FailingUserFixture;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
@@ -27,6 +28,20 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
  */
 @DisplayName("Подготовка и очистка друзей пользователя")
 final class UserWithFriendsFixtureTest {
+    @Test
+    @DisplayName("Добавление друзей сохраняет исходящие приглашения вложенной фикстуры")
+    void friendsCannotDiscardPreparedOutcomeInvitations() {
+        TestUser invitation = new TestUser(UUID.randomUUID(), "invitee_" + UUID.randomUUID(), "F8n3K6w2S9r4");
+        TestUser user = new TestUser(UUID.randomUUID(), "owner_" + UUID.randomUUID(), "H7p2V9m4C6s3")
+                .withOutcomeInvitations(List.of(invitation));
+        try (UserFixture fixture = new UserWithFriendsFixture(
+                new FailingUserFixture(user, new ArrayList<>(), false, false), List.of())) {
+            assertThat(fixture.create().outcomeInvitations())
+                    .as("Декоратор друзей не должен терять исходящие приглашения вложенной фикстуры")
+                    .containsExactly(invitation);
+        }
+    }
+
     @Test
     @Tag("db")
     @DisplayName("Подготовка пользователя сохраняет список друзей")
