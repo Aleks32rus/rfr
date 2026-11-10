@@ -2,6 +2,7 @@ package io.student.rangiffler.test;
 
 import io.student.rangiffler.data.TestUser;
 import io.student.rangiffler.junit.annotation.ProbeTarget;
+import io.student.rangiffler.junit.engine.ProbeEngine;
 import io.student.rangiffler.data.db.AuthAccount;
 import io.student.rangiffler.data.db.Authorities;
 import io.student.rangiffler.data.db.Friendships;
@@ -38,6 +39,18 @@ import static org.junit.platform.engine.discovery.DiscoverySelectors.selectClass
 @Tag("db")
 @DisplayName("Подготовка и очистка пользователей через UserExtension")
 final class UserExtensionTest {
+    @Test
+    @DisplayName("Параметр обычного движка не разрешает выполнение мишени")
+    void ordinaryEngineCannotEnableProbeByConfiguration() {
+        EngineExecutionResults execution = EngineTestKit.engine("junit-jupiter")
+                .selectors(selectClass(SingleScenario.class))
+                .configurationParameter("rfr.probe.targets.enabled", "true").execute();
+        assertThat(List.of(execution.testEvents().started().count(), execution.allEvents().skipped().count(),
+                execution.testEvents().reportingEntryPublished().count()))
+                .as("Параметр обычного движка не должен разрешать мишень вне её внешнего теста")
+                .isEqualTo(List.of(0L, 1L, 0L));
+    }
+
     @Test
     @DisplayName("После всех сценариев в friendship отсутствуют связи участников")
     void completedProbesCannotLeaveFriendshipsByUserId() {
@@ -193,7 +206,7 @@ final class UserExtensionTest {
     }
 
     private EngineExecutionResults execution(Class<?>... scenarios) {
-        return EngineTestKit.engine("junit-jupiter").selectors(Arrays.stream(scenarios)
+        return EngineTestKit.engine(new ProbeEngine()).selectors(Arrays.stream(scenarios)
                         .map(scenario -> selectClass(scenario)).toArray(DiscoverySelector[]::new))
                 .configurationParameter("rfr.probe.targets.enabled", "true")
                 .configurationParameter("junit.jupiter.execution.parallel.enabled", "false")

@@ -4,6 +4,7 @@ import io.student.rangiffler.data.TestUser;
 import io.student.rangiffler.fixture.StaticUserFixture;
 import io.student.rangiffler.fixture.UserFixture;
 import io.student.rangiffler.junit.annotation.ProbeTarget;
+import io.student.rangiffler.junit.engine.ProbeEngine;
 import io.student.rangiffler.junit.annotation.StaticUser;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.MethodOrderer;
@@ -63,7 +64,7 @@ final class UsersQueueExtensionTest {
     }
 
     private EngineExecutionResults execution(Class<?> scenario) {
-        return EngineTestKit.engine("junit-jupiter").selectors(selectClass(scenario))
+        return EngineTestKit.engine(new ProbeEngine()).selectors(selectClass(scenario))
                 .configurationParameter("rfr.probe.targets.enabled", "true")
                 .configurationParameter("junit.jupiter.execution.parallel.enabled", "false")
                 .configurationParameter("junit.jupiter.extensions.store.close.autocloseable.enabled", "true")
