@@ -12,6 +12,8 @@ import org.junit.jupiter.api.parallel.Resources;
 import org.junit.platform.launcher.core.LauncherDiscoveryRequestBuilder;
 import org.junit.platform.launcher.core.LauncherFactory;
 import org.junit.platform.launcher.listeners.SummaryGeneratingListener;
+import org.junit.platform.testkit.engine.EngineExecutionResults;
+import org.junit.platform.testkit.engine.EngineTestKit;
 
 import java.util.List;
 import java.util.Optional;
@@ -21,15 +23,40 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.platform.engine.discovery.DiscoverySelectors.selectClass;
 
 /**
- * Проверяет изоляцию мишеней при обычном запуске с глобальным разрешением JVM.
+ * Проверяет включение мишеней обычным Jupiter при явном разрешении JVM.
  */
 @Timeout(value = 15, unit = TimeUnit.SECONDS)
-@DisplayName("Изоляция мишеней от обычного Launcher")
+@DisplayName("Управление выполнением мишеней через параметр конфигурации")
 final class ProbeTargetConditionTest {
     @Test
+    @DisplayName("Параметр EngineTestKit разрешает выполнение мишени в Jupiter")
+    void enabledProbeCannotBeSkippedByJupiter() {
+        EngineExecutionResults execution = EngineTestKit.engine("junit-jupiter")
+                .selectors(selectClass(Target.class))
+                .configurationParameter("rfr.probe.targets.enabled", "true").execute();
+        assertThat(List.of(execution.testEvents().succeeded().count(), execution.allEvents().failed().count(),
+                execution.testEvents().reportingEntryPublished().count()))
+                .as("Jupiter не должен пропускать разрешённую мишень или терять событие получения пользователя")
+                .isEqualTo(List.of(1L, 0L, 1L));
+    }
+
+    @Test
+    @DisplayName("Обычный Launcher пропускает мишень без разрешения")
+    void ordinaryLauncherCannotRunProbeWithoutPermission() {
+        SummaryGeneratingListener listener = new SummaryGeneratingListener();
+        LauncherFactory.create().execute(LauncherDiscoveryRequestBuilder.request()
+                .selectors(selectClass(Target.class))
+                .configurationParameter("rfr.probe.targets.enabled", "false").build(), listener);
+        assertThat(List.of(listener.getSummary().getTestsStartedCount(),
+                listener.getSummary().getContainersSkippedCount(), listener.getSummary().getTotalFailureCount()))
+                .as("Обычный Launcher не должен запускать отключённую мишень или получать пользователя")
+                .isEqualTo(List.of(0L, 1L, 0L));
+    }
+
+    @Test
     @ResourceLock(Resources.SYSTEM_PROPERTIES)
-    @DisplayName("Глобальное свойство JVM не разрешает мишень обычному Launcher")
-    void ordinaryLauncherCannotEnableProbeBySystemProperty() {
+    @DisplayName("Глобальное свойство JVM разрешает мишень обычному Launcher")
+    void enabledProbeCannotBeSkippedByOrdinaryLauncher() {
         Optional<String> property = Optional.ofNullable(System.getProperty("rfr.probe.targets.enabled"));
         SummaryGeneratingListener listener = new SummaryGeneratingListener();
         try {
@@ -45,8 +72,8 @@ final class ProbeTargetConditionTest {
         }
         assertThat(List.of(listener.getSummary().getTestsStartedCount(),
                 listener.getSummary().getContainersSkippedCount(), listener.getSummary().getTotalFailureCount()))
-                .as("Обычный Launcher не должен запускать мишень или получать пользователя из-за свойства JVM")
-                .isEqualTo(List.of(0L, 1L, 0L));
+                .as("Обычный Launcher не должен пропускать явно разрешённую мишень или завершаться ошибкой")
+                .isEqualTo(List.of(1L, 0L, 0L));
     }
 
     /**
@@ -57,7 +84,7 @@ final class ProbeTargetConditionTest {
     static final class Target {
         @Test
         @DisplayName("Получение пользователя и выполнение тела мишени")
-        void targetCannotRunOutsideProbeEngine(TestReporter reporter, @StaticUser TestUser user) {
+        void enabledTargetCannotMissUser(TestReporter reporter, @StaticUser TestUser user) {
             reporter.publishEntry("user", user.id().toString());
         }
     }
