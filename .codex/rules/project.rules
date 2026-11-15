@@ -1,0 +1,37 @@
+# Разрешения относятся к командам этого проекта; рабочий каталог проверяется агентом.
+for wrapper in [[], ["rtk"], ["rtk", "proxy"]]:
+    prefix_rule(
+        pattern = wrapper + [["git", "git.exe"], ["push", "send-pack", "http-push", "rm", "clean"]],
+        decision = "forbidden",
+        justification = "Отправка изменений и удаление через Git запрещены; вместо удаления переименуйте файл в .<name>.<timestamp>.bak",
+    )
+    prefix_rule(
+        pattern = wrapper + [["rm", "rm.exe", "/bin/rm", "/usr/bin/rm", "Remove-Item", "remove-item", "ri", "del", "erase", "rmdir", "rmdir.exe", "rd", "unlink", "unlink.exe", "/usr/bin/unlink"]],
+        decision = "forbidden",
+        justification = "Вместо удаления переименуйте файл или каталог в .<name>.<timestamp>.bak",
+    )
+    # Префиксы не поддерживают произвольные аргументы: запрещаем глобальные опции,
+    # за которыми можно скрыть push/rm; для чтения используйте workdir инструмента.
+    prefix_rule(
+        pattern = wrapper + [["git", "git.exe"], ["-C", "-c", "--git-dir", "--work-tree", "--namespace", "--exec-path", "--no-pager", "--paginate", "-p", "-P", "--literal-pathspecs", "--no-optional-locks"]],
+        decision = "forbidden",
+        justification = "Глобальные опции Git могут скрывать push или удаление; задайте рабочий каталог через workdir и вызывайте подкоманду напрямую",
+    )
+    # -delete и -exec могут находиться после любого числа путей и условий.
+    prefix_rule(
+        pattern = wrapper + [["find", "find.exe", "/usr/bin/find", "/bin/find"]],
+        decision = "forbidden",
+        justification = "find может удалять через -delete или -exec; для поиска используйте fd или rg --files",
+    )
+    for executable in ["gradlew.bat", ".\\gradlew.bat", "./gradlew", "./gradlew.bat"]:
+        for task in [":rfr-auth:bootRun", ":rfr-api:bootRun", "runAll", "test", ":rfr-auth:test", ":rfr-api:test", ":rfr-e2e:test", "--stop"]:
+            prefix_rule(pattern = wrapper + [executable, task], decision = "allow")
+    for executable in ["npm", "npm.cmd"]:
+        for task in ["dev", "test"]:
+            prefix_rule(pattern = wrapper + [executable, "run", task], decision = "allow")
+        prefix_rule(pattern = wrapper + [executable, "test"], decision = "allow")
+    for action in ["start", "stop", "restart"]:
+        prefix_rule(pattern = wrapper + ["docker", "compose", action, "mysql"], decision = "allow")
+    prefix_rule(pattern = wrapper + ["docker", "compose", "up", "-d", "mysql", "--wait"], decision = "allow")
+# Идентификатор процесса допустим только после проверки его принадлежности проекту.
+prefix_rule(pattern = ["Stop-Process", "-Id"], decision = "allow")

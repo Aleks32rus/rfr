@@ -71,16 +71,17 @@ Refresh token публичному клиенту не выдается. Пос�
 
 | Токен | Кому предназначен | Содержимое | Время жизни |
 |---|---|---|---|
-| **access token** (JWT) | `rfr-api` | `sub` = username, `aud: ["rangiffler-api"]`, `authorities: ["read","write"]`, `scope` | 10 минут |
-| **id_token** (JWT) | Фронтенд (`aud` = `client`) | `sub`, `sid` и др. OIDC-claims | 30 минут (фиксировано в Spring Authorization Server) |
+| **access token** (JWT) | `rfr-api` | `sub` = username, `aud: ["rangiffler-api"]`, `authorities: ["read","write"]`, `scope` | 30 минут, задано в `application.yaml` |
+| **id_token** (JWT) | Фронтенд (`aud` = `client`) | `sub`, `sid` и др. OIDC-claims | Определяется генератором Spring Authorization Server; в проекте явно не настроено, проверяйте `exp` и `iat` |
 
 - `aud` и `authorities` добавляет `AccessTokenCustomizer` только в access token. Authorities берутся из таблицы `authority`
   пользователя; служебные `FACTOR_*` (их добавляет Spring Security 7) отбрасываются. Значение audience - свойство
   `rangiffler-api.audience`.
 - `rfr-api` принимает только access token: проверяет audience и требует `read` для query и `write` для mutation.
   `id_token` фронтенд использует только как `id_token_hint` при logout.
-- Ключ подписи RSA генерируется при каждом старте (`jwkSource()`): после перезапуска `rfr-auth` все ранее выданные
-  токены становятся невалидными.
+- Ключ подписи RSA генерируется при каждом старте (`jwkSource()`). После перезапуска нужно войти заново:
+  auth больше не публикует прежний ключ. API может временно продолжать проверять старые JWT по закэшированному JWKS,
+  поэтому немедленный отказ всех ранее выданных токенов не гарантирован.
 
 ## Endpoints
 
@@ -155,9 +156,10 @@ Whitespace проверяется через `Character.isWhitespace` (проб�
 4. rfr-auth -> 302 http://localhost:3001/authorized?code=...   (экран согласия появится, только если запросить scope кроме openid)
 5. Frontend -> POST /oauth2/token
                grant_type=authorization_code&code=...&redirect_uri=...&client_id=client&code_verifier=...
-6. rfr-auth -> { "access_token": "...", "id_token": "...", "token_type": "Bearer", "expires_in": 599, "scope": "openid" }
+6. rfr-auth -> { "access_token": "...", "id_token": "...", "token_type": "Bearer", "expires_in": 1799, "scope": "openid" }
 ```
 
+`expires_in` в примере приблизительный: фактическое значение зависит от момента формирования ответа.
 Фронтенд сохраняет `access_token` и `id_token` в localStorage и передает в `rfr-api` только access token.
 
 ### Logout
@@ -189,13 +191,18 @@ OAuth-авторизации, consent и ключи в БД не хранятс�
 
 ```bash
 # из корня проекта: MySQL в Docker
-# внимание: localenv.sh останавливает и удаляет ВСЕ docker-контейнеры на машине
+# предварительно задай MYSQL_ROOT_PASSWORD в окружении или локальном .env
+# скрипт выполняет docker compose up -d mysql --wait
 bash localenv.sh
 
 cd rfr-auth
 ../gradlew bootRun
 # или main class io.student.rangiffler.RangifflerAuthApplication из IDE
 ```
+
+Другие контейнеры скрипт не останавливает и не удаляет; данные MySQL хранятся в прежнем томе с явным именем `mysql-volume`.
+Пароль подключения auth должен соответствовать MySQL; при необходимости задай `SPRING_DATASOURCE_PASSWORD`
+в окружении auth. Общий порядок запуска описан в [корневом README](../README.md#с-чего-начать).
 
 Проверка:
 
@@ -207,6 +214,6 @@ curl http://localhost:9001/.well-known/openid-configuration
 
 - **Токены перестали проходить после перезапуска `rfr-auth`.** Ключ подписи генерируется при старте - войдите заново.
 - **`rfr-api` отвечает 401 на валидный на вид токен.** Проверьте, что в Bearer передается access token, а не id_token
-  (у id_token `aud` = `client`), и что токен не старше 10 минут.
+  (у id_token `aud` = `client`), и проверьте срок действия `exp` (настроенный TTL access token — 30 минут).
 - **CORS-ошибки.** Фронтенд должен работать на `rangiffler-front.base-uri` (`http://localhost:3001`); origins задает `CorsCustomizer`.
 - **`GET /login` сразу уводит на фронтенд.** Это ожидаемо без сохраненного OAuth-запроса - начинайте с `/oauth2/authorize`.

@@ -45,8 +45,17 @@ allure {
     }
 }
 
+tasks.register('installPlaywrightWithDeps', JavaExec) {
+    group = 'verification'
+    description = 'Устанавливает Chromium и системные библиотеки для E2E в CI'
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.microsoft.playwright.CLI'
+    args 'install', '--with-deps', 'chromium'
+}
+
 test {
     useJUnitPlatform()
+    systemProperty 'allure.results.directory', layout.buildDirectory.dir('allure-results').get().asFile.absolutePath
     System.properties.findAll { key, value -> key.toString().startsWith('rfr.') }.each { key, value ->
         systemProperty key.toString(), value
     }
