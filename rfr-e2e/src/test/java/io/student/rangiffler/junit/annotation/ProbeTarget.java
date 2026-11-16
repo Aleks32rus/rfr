@@ -9,7 +9,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Ограничивает выполнение мишени явно разрешённым запуском EngineTestKit.
+ * Отключает мишень по умолчанию до явного разрешения параметром конфигурации.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
