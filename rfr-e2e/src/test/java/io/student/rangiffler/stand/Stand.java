@@ -30,7 +30,7 @@ public final class Stand {
         long deadline = System.nanoTime() + timeout.toNanos();
         ExecutorService pool = Executors.newVirtualThreadPerTaskExecutor();
         try {
-            if (!pending.isEmpty() && deadline - System.nanoTime() > 0) {
+            while (!pending.isEmpty() && deadline - System.nanoTime() > 0) {
                 List<Service> round = List.copyOf(pending);
                 List<Callable<Boolean>> probes = round.stream().<Callable<Boolean>>map(service -> service::responds)
                         .toList();
