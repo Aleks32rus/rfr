@@ -1,5 +1,7 @@
 package io.student.rangiffler.config;
 
+import java.net.URI;
+import java.time.Duration;
 import java.util.Locale;
 
 /**
@@ -32,6 +34,22 @@ public final class TestConfig {
     public static String commit() {
         String hash = System.getProperty("rfr.commit", "unknown");
         return hash.isBlank() ? "unknown" : hash;
+    }
+
+    public static boolean standCheck() {
+        return Boolean.parseBoolean(System.getProperty("rfr.standCheck",
+                System.getenv().getOrDefault("RFR_STAND_CHECK", "true")));
+    }
+
+    public static Duration standTimeout() {
+        return Duration.ofSeconds(Long.parseLong(System.getProperty("rfr.standTimeout",
+                System.getenv().getOrDefault("RFR_STAND_TIMEOUT", "180"))));
+    }
+
+    public static URI dbAddress() {
+        URI database = URI.create(AUTH_DB_URL.replaceFirst("^jdbc:", ""));
+        return URI.create("tcp://" + (database.getPort() < 0
+                ? database.getHost() + ":3306" : database.getRawAuthority()));
     }
 
     private static String value(String key, String fallback) {

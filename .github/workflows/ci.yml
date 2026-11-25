@@ -98,6 +98,7 @@ jobs:
       SPRING_DATASOURCE_PASSWORD: ${{ github.run_id }}-${{ github.run_attempt }}
       RFR_AUTH_DB_PASSWORD: ${{ github.run_id }}-${{ github.run_attempt }}
       RFR_API_DB_PASSWORD: ${{ github.run_id }}-${{ github.run_attempt }}
+      RFR_STAND_TIMEOUT: '300'
       VITE_AUTH_URL: http://localhost:9001
       VITE_API_URL: http://localhost:8081
       VITE_FRONT_HOST: localhost
@@ -125,29 +126,6 @@ jobs:
       - name: Запустить клиент
         working-directory: rfr-gql-client
         run: npm run dev -- --strictPort > "$RUNNER_TEMP/frontend.log" 2>&1 &
-      - name: Дождаться портов стенда
-        run: |
-          python3 - <<'PY'
-          import socket
-          import threading
-          import time
-
-          ports = {9001, 8081, 3001}
-          deadline = time.monotonic() + 180
-          interval = threading.Event()
-          while ports and time.monotonic() < deadline:
-              for port in sorted(ports):
-                  try:
-                      with socket.create_connection(("localhost", port), timeout=1):
-                          ports.remove(port)
-                          print(f"Порт {port} доступен", flush=True)
-                  except OSError:
-                      pass
-              if ports:
-                  interval.wait(min(1, max(0, deadline - time.monotonic())))
-          if ports:
-              raise SystemExit(f"Стенд не запустился за 180 секунд, недоступны порты: {sorted(ports)}")
-          PY
       - name: Запустить E2E-тесты
         run: ./gradlew :rfr-e2e:test --no-daemon
       - name: Сохранить исходные результаты Allure
