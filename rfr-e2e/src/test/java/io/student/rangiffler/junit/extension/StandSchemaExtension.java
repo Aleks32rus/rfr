@@ -20,8 +20,8 @@ public final class StandSchemaExtension implements SuiteExtension {
     }
 
     public StandSchemaExtension() {
-        this(List.of(new MigrationSchema(Databases.AUTH.dataSource(), "rangiffler-auth", "rfr-auth"),
-                new MigrationSchema(Databases.API.dataSource(), "rangiffler-api", "rfr-api")));
+        this(List.of(new MigrationSchema(Databases.AUTH.dataSource(), Databases.AUTH.schema(), "rfr-auth"),
+                new MigrationSchema(Databases.API.dataSource(), Databases.API.schema(), "rfr-api")));
     }
 
     @Override

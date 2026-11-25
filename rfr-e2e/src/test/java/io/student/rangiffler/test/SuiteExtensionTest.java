@@ -1,7 +1,6 @@
 package io.student.rangiffler.test;
 
 import io.student.rangiffler.junit.annotation.ProbeTarget;
-import io.student.rangiffler.junit.engine.ProbeEngine;
 import io.student.rangiffler.junit.extension.SuiteExtension;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.RepeatedTest;
@@ -217,21 +216,21 @@ final class SuiteExtensionTest {
     }
 
     @Test
-    @DisplayName("Обычный Jupiter не запускает пробы даже с разрешающим параметром")
-    void ordinaryEngineCannotRunSuiteProbes() {
+    @DisplayName("Обычный Jupiter запускает пробу с разрешающим параметром")
+    void ordinaryEngineCannotSkipEnabledSuiteProbe() {
         EngineExecutionResults execution = EngineTestKit.engine("junit-jupiter").selectors(selectClass(FirstProbe.class))
                 .configurationParameter("rfr.probe.targets.enabled", "true")
                 .configurationParameter("junit.jupiter.extensions.autodetection.enabled", "false").execute();
-        assertThat(List.of(execution.testEvents().started().count(), execution.allEvents().skipped().count(),
-                execution.allEvents().failed().count(), entries(execution).size()))
-                .as("Обычный движок не должен запускать пробы или приобретать ресурс расширения")
-                .isEqualTo(List.of(0L, 1L, 0L, 0));
+        assertThat(List.of(execution.testEvents().succeeded().count(), execution.allEvents().skipped().count(),
+                execution.allEvents().failed().count()))
+                .as("Обычный Jupiter не должен пропускать разрешённую пробу или завершать её с ошибкой")
+                .isEqualTo(List.of(2L, 0L, 0L));
     }
 
     @Test
-    @DisplayName("ProbeEngine не запускает пробы без локального разрешения")
-    void probeEngineCannotRunSuiteProbesWithoutPermission() {
-        EngineExecutionResults execution = EngineTestKit.engine(new ProbeEngine()).selectors(selectClass(FirstProbe.class))
+    @DisplayName("Jupiter не запускает пробы без разрешения")
+    void jupiterCannotRunSuiteProbesWithoutPermission() {
+        EngineExecutionResults execution = EngineTestKit.engine("junit-jupiter").selectors(selectClass(FirstProbe.class))
                 .configurationParameter("rfr.probe.targets.enabled", "false")
                 .configurationParameter("junit.jupiter.extensions.autodetection.enabled", "false").execute();
         assertThat(List.of(execution.testEvents().started().count(), execution.allEvents().skipped().count(),
@@ -241,7 +240,7 @@ final class SuiteExtensionTest {
     }
 
     private EngineExecutionResults execution(Map<String, String> configuration, Class<?>... targets) {
-        var builder = EngineTestKit.engine(new ProbeEngine()).selectors(Arrays.stream(targets)
+        var builder = EngineTestKit.engine("junit-jupiter").selectors(Arrays.stream(targets)
                         .map(target -> selectClass(target)).toArray(DiscoverySelector[]::new))
                 .configurationParameter("rfr.probe.targets.enabled", "true")
                 .configurationParameter("junit.jupiter.extensions.autodetection.enabled", "false")

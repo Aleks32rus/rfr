@@ -29,6 +29,11 @@ public final class TestConfig {
     private TestConfig() {
     }
 
+    public static String commit() {
+        String hash = System.getProperty("rfr.commit", "unknown");
+        return hash.isBlank() ? "unknown" : hash;
+    }
+
     private static String value(String key, String fallback) {
         return System.getProperty("rfr." + key,
                 System.getenv().getOrDefault("RFR_" + key.replace('.', '_').toUpperCase(Locale.ROOT), fallback));

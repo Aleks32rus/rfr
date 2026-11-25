@@ -76,3 +76,10 @@ test {
     }
     jvmArgumentProviders.add({ ["-javaagent:${configurations.agent.singleFile}"] } as CommandLineArgumentProvider)
 }
+
+tasks.withType(Test).configureEach {
+    systemProperty 'rfr.commit', providers.exec {
+        commandLine 'git', 'rev-parse', '--short', 'HEAD'
+        ignoreExitValue = true
+    }.standardOutput.asText.get().trim()
+}
