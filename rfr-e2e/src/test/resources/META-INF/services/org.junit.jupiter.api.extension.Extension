@@ -1,0 +1,4 @@
+io.student.rangiffler.junit.extension.AllureEnvironmentExtension
+io.student.rangiffler.junit.extension.StandReadinessExtension
+io.student.rangiffler.junit.extension.StandSchemaExtension
+io.student.rangiffler.junit.extension.DemoSuiteExtension
